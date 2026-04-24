@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@theme {
+  --color-signal-orange: #CF4500;
+  --color-light-orange: #F37338;
+  --color-ink-black: #141413;
+  --color-slate-gray: #696969;
+  --color-canvas-cream: #F3F0EE;
+  --color-lifted-cream: #FCFBFA;
+  --color-soft-bone: #F4F4F4;
+  --color-dust-taupe: #D1CDC7;
+  
+  --font-sans: "Inter", "Work Sans", ui-sans-serif, system-ui, sans-serif;
+  
+  --radius-lg: 1rem;
+  --radius-xl: 2rem;
+  --radius-2xl: 3rem;
+}
+
+@layer base {
+  body {
+    @apply bg-canvas-cream text-ink-black font-sans antialiased;
+  }
+}
+
+@layer components {
+  .glass-nav {
+    @apply bg-white/90 backdrop-blur-xl border border-white/20 shadow-[0_24px_48px_rgba(0,0,0,0.04)];
+  }
+  
+  .bento-card {
+    @apply bg-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.02)] border border-black/5;
+  }
+  
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
