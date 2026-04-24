@@ -1,0 +1,91 @@
+<svg width="1200" height="475" viewBox="0 0 1200 475" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0" y1="0" x2="1200" y2="475" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FCFBFA"/>
+      <stop offset="1" stop-color="#F3F0EE"/>
+    </linearGradient>
+    <linearGradient id="orangeFade" x1="760" y1="65" x2="1090" y2="390" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F37338"/>
+      <stop offset="1" stop-color="#CF4500"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1040 68) rotate(127.875) scale(490.645 545.024)">
+      <stop stop-color="#F37338" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="#F37338" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softShadow" x="0" y="0" width="1200" height="475" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="18"/>
+      <feGaussianBlur stdDeviation="24"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.0784314 0 0 0 0 0.0784314 0 0 0 0 0.0745098 0 0 0 0.08 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_2"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_2" result="shape"/>
+    </filter>
+    <pattern id="grain" width="8" height="8" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="0.5" fill="#141413" fill-opacity="0.05"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="475" rx="28" fill="url(#bgGradient)"/>
+  <rect width="1200" height="475" rx="28" fill="url(#grain)" opacity="0.5"/>
+  <rect x="36" y="32" width="1128" height="411" rx="26" stroke="#D1CDC7"/>
+  <circle cx="1033" cy="86" r="168" fill="url(#glow)"/>
+
+  <path d="M-95 410C119 338 237 171 430 134C637 94 738 214 922 194C1055 180 1168 111 1295 59" stroke="#F37338" stroke-opacity="0.32" stroke-width="2"/>
+  <path d="M-28 466C167 350 312 395 489 302C672 205 755 84 910 101C1071 118 1178 207 1280 149" stroke="#CF4500" stroke-opacity="0.14" stroke-width="1.5"/>
+
+  <circle cx="118" cy="88" r="12" fill="#CF4500"/>
+  <rect x="144" y="76" width="148" height="24" rx="12" fill="#141413" fill-opacity="0.08"/>
+  <rect x="154" y="84" width="56" height="8" rx="4" fill="#141413" fill-opacity="0.16"/>
+
+  <text x="86" y="184" fill="#141413" font-size="72" font-weight="800" font-family="Work Sans, Inter, Arial, sans-serif" letter-spacing="-2">Mediax</text>
+  <text x="88" y="224" fill="#696969" font-size="22" font-weight="600" font-family="Work Sans, Inter, Arial, sans-serif">
+    Local-first content operations workspace
+  </text>
+
+  <text x="88" y="282" fill="#141413" font-size="20" font-weight="700" font-family="Work Sans, Inter, Arial, sans-serif">
+    From brand profile to plans, tasks, and drafts.
+  </text>
+  <text x="88" y="314" fill="#696969" font-size="18" font-weight="500" font-family="Work Sans, Inter, Arial, sans-serif">
+    Single-brand workflow, persistent local state, GitHub-ready prototype.
+  </text>
+
+  <rect x="88" y="352" width="106" height="38" rx="19" fill="#141413"/>
+  <text x="141" y="376" text-anchor="middle" fill="#FCFBFA" font-size="14" font-weight="700" font-family="Work Sans, Inter, Arial, sans-serif">Brand</text>
+  <rect x="206" y="352" width="102" height="38" rx="19" fill="#FFFFFF" stroke="#D1CDC7"/>
+  <text x="257" y="376" text-anchor="middle" fill="#141413" font-size="14" font-weight="700" font-family="Work Sans, Inter, Arial, sans-serif">Plans</text>
+  <rect x="320" y="352" width="104" height="38" rx="19" fill="#FFFFFF" stroke="#D1CDC7"/>
+  <text x="372" y="376" text-anchor="middle" fill="#141413" font-size="14" font-weight="700" font-family="Work Sans, Inter, Arial, sans-serif">Drafts</text>
+  <rect x="436" y="352" width="118" height="38" rx="19" fill="#FFFFFF" stroke="#D1CDC7"/>
+  <text x="495" y="376" text-anchor="middle" fill="#141413" font-size="14" font-weight="700" font-family="Work Sans, Inter, Arial, sans-serif">Local-first</text>
+
+  <g filter="url(#softShadow)">
+    <rect x="702" y="82" width="388" height="248" rx="28" fill="#FFFFFF"/>
+    <rect x="734" y="112" width="122" height="18" rx="9" fill="#141413"/>
+    <rect x="864" y="110" width="82" height="22" rx="11" fill="#CF4500" fill-opacity="0.12"/>
+    <text x="905" y="125" text-anchor="middle" fill="#CF4500" font-size="12" font-weight="800" font-family="Work Sans, Inter, Arial, sans-serif">ACTIVE</text>
+    <rect x="734" y="154" width="324" height="74" rx="22" fill="#FCFBFA" stroke="#F4F4F4"/>
+    <rect x="756" y="176" width="158" height="12" rx="6" fill="#141413"/>
+    <rect x="756" y="198" width="206" height="10" rx="5" fill="#141413" fill-opacity="0.14"/>
+    <rect x="981" y="174" width="55" height="36" rx="18" fill="#141413"/>
+    <path d="M1004 184L1015 192L1004 200" stroke="#FCFBFA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="734" y="244" width="152" height="54" rx="20" fill="#141413"/>
+    <text x="760" y="266" fill="#FCFBFA" font-size="10" font-weight="800" font-family="Work Sans, Inter, Arial, sans-serif" letter-spacing="1.4">DASHBOARD</text>
+    <text x="760" y="287" fill="#FCFBFA" font-size="24" font-weight="800" font-family="Work Sans, Inter, Arial, sans-serif">12 Plans</text>
+    <rect x="902" y="244" width="156" height="54" rx="20" fill="url(#orangeFade)"/>
+    <text x="928" y="266" fill="#FCFBFA" font-size="10" font-weight="800" font-family="Work Sans, Inter, Arial, sans-serif" letter-spacing="1.4">DRAFT FLOW</text>
+    <text x="928" y="287" fill="#FCFBFA" font-size="24" font-weight="800" font-family="Work Sans, Inter, Arial, sans-serif">5 Ready</text>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="828" y="282" width="272" height="121" rx="26" fill="#FFFFFF"/>
+    <text x="856" y="319" fill="#141413" font-size="12" font-weight="800" font-family="Work Sans, Inter, Arial, sans-serif" letter-spacing="1.8">
+      WORKFLOW SNAPSHOT
+    </text>
+    <rect x="856" y="340" width="192" height="12" rx="6" fill="#141413"/>
+    <rect x="856" y="362" width="148" height="10" rx="5" fill="#141413" fill-opacity="0.14"/>
+    <rect x="856" y="381" width="111" height="10" rx="5" fill="#141413" fill-opacity="0.14"/>
+    <circle cx="1056" cy="362" r="16" fill="#CF4500"/>
+    <circle cx="1090" cy="362" r="16" fill="#F37338" fill-opacity="0.22"/>
+  </g>
+</svg>
