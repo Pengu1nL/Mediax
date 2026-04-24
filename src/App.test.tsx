@@ -97,7 +97,7 @@ describe('App routing', () => {
     expect(screen.getByText('主视觉海报发布 - 微信公众号')).toBeInTheDocument();
   });
 
-  it('renders asset thumbnails for folders in the library grid', async () => {
+  it('shows local folder access guidance in unsupported browsers', async () => {
     signInSession();
 
     render(
@@ -106,7 +106,7 @@ describe('App routing', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole('heading', { name: '所有素材' })).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: '2024 春季营销中心' })).toBeInTheDocument();
+    expect(await screen.findByText('当前浏览器不支持本地文件夹访问')).toBeInTheDocument();
+    expect(screen.getByText('请使用 Chrome 或 Edge 打开 Mediax，再绑定本地素材文件夹。')).toBeInTheDocument();
   });
 });

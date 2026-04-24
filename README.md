@@ -12,6 +12,7 @@ This version turns the original static UI into a local-first app with:
 - persistent brand profile data
 - plan -> task -> draft workflow
 - draft editing and local storage persistence
+- local asset folder management for images, PDFs, videos, and common documents
 
 ## Tech Stack
 
@@ -74,7 +75,8 @@ npm run build
 
 - Data is stored locally in the browser via `localStorage`.
 - This repository currently targets a single-brand, single-admin workflow.
-- `Library` remains a prototype view; real uploads are intentionally not implemented yet.
+- `Library` binds to a local asset folder through the File System Access API. Use Chrome or Edge for folder selection, recursive scanning, current-directory folder/file browsing, upload-to-folder, folder upload with nested paths preserved, rename, download, and delete operations.
+- Local asset management supports images, PDFs, videos, and common documents (`.doc`, `.docx`, `.xls`, `.xlsx`, `.ppt`, `.pptx`, `.txt`, `.md`, `.csv`, `.rtf`) up to 50MB per file.
 - External publishing integrations and AI features are not part of the current release.
 
 ## Origin
