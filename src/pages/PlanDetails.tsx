@@ -133,6 +133,14 @@ export default function PlanDetails() {
     }
   };
 
+  const handleDeleteTask = (task: PlanTask) => {
+    if (!window.confirm('删除任务后，关联草稿会保留但不再挂在任务下。确认继续吗？')) {
+      return;
+    }
+
+    deleteTask(plan.id, task.id);
+  };
+
   return (
     <div className="pb-20 space-y-12">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
@@ -206,7 +214,7 @@ export default function PlanDetails() {
                     key={task.id}
                     task={task}
                     onEdit={() => openEditDialog(task)}
-                    onDelete={() => deleteTask(plan.id, task.id)}
+                    onDelete={() => handleDeleteTask(task)}
                     onOpenDraft={() => handleDraftAction(task)}
                   />
                 ))}

@@ -42,6 +42,10 @@ export default function Plans() {
       }, {}),
     [drafts],
   );
+  const activePlans = plans.filter((plan) => plan.status === 'active').length;
+  const draftPlans = plans.filter((plan) => plan.status === 'draft').length;
+  const completedPlans = plans.filter((plan) => plan.status === 'completed').length;
+  const linkedDrafts = drafts.filter((draft) => draft.planId).length;
 
   const openCreateDialog = () => {
     setNotice('');
@@ -124,84 +128,142 @@ export default function Plans() {
           onAction={openCreateDialog}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {plans.map((plan) => (
-            <div
-              key={plan.id}
-              onClick={() => navigate(`/plans/${plan.id}`)}
-              className="bento-card p-10 relative overflow-hidden group cursor-pointer hover:translate-y-[-8px] transition-all duration-300"
-            >
+        <>
+          <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <PlanMetric label="进行中" value={activePlans} />
+            <PlanMetric label="草稿计划" value={draftPlans} />
+            <PlanMetric label="已完成" value={completedPlans} />
+            <PlanMetric label="关联草稿" value={linkedDrafts} />
+          </section>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {plans.map((plan) => (
               <div
-                className={`absolute top-0 right-0 w-32 h-32 rounded-bl-full -z-0 opacity-10 transition-transform group-hover:scale-110 ${
-                  plan.status === 'active'
-                    ? 'bg-signal-orange'
-                    : plan.status === 'draft'
-                      ? 'bg-ink-black'
-                      : 'bg-slate-gray'
-                }`}
-              />
+                key={plan.id}
+                onClick={() => navigate(`/plans/${plan.id}`)}
+                className="bento-card p-8 relative overflow-hidden group cursor-pointer hover:translate-y-[-6px] transition-all duration-300"
+              >
+                <div
+                  className={`absolute top-0 right-0 w-28 h-28 rounded-bl-full -z-0 opacity-10 transition-transform group-hover:scale-110 ${
+                    plan.status === 'active'
+                      ? 'bg-signal-orange'
+                      : plan.status === 'draft'
+                        ? 'bg-ink-black'
+                        : 'bg-slate-gray'
+                  }`}
+                />
 
-              <div className="flex justify-between items-start mb-10 relative z-10">
-                <span
-                  className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest border ${statusPillClass(
-                    plan.status,
-                  )}`}
-                >
-                  {planStatusLabel(plan.status)}
-                </span>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    openEditDialog(plan);
-                  }}
-                  className="text-zinc-300 hover:text-ink-black transition-colors"
-                  aria-label={`编辑 ${plan.title}`}
-                >
-                  <MoreHorizontal size={24} />
-                </button>
-              </div>
-
-              <h3 className="text-2xl font-black text-ink-black mb-6 leading-tight group-hover:text-signal-orange transition-colors">
-                {plan.title}
-              </h3>
-
-              <div className="space-y-4 text-slate-gray font-medium text-sm">
-                <div className="flex items-center gap-3">
-                  <Calendar size={18} className="text-zinc-300" />
-                  <span>{formatDateRange(plan.startDate, plan.endDate)}</span>
+                <div className="flex justify-between items-start mb-8 relative z-10">
+                  <span
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest border ${statusPillClass(
+                      plan.status,
+                    )}`}
+                  >
+                    {planStatusLabel(plan.status)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openEditDialog(plan);
+                    }}
+                    className="text-zinc-300 hover:text-ink-black transition-colors"
+                    aria-label={`编辑 ${plan.title}`}
+                  >
+                    <MoreHorizontal size={24} />
+                  </button>
                 </div>
-                <div className="flex items-center gap-3">
-                  <FileText size={18} className="text-zinc-300" />
-                  <span>包含 {draftCounts[plan.id] ?? 0} 篇关联草稿</span>
+
+                <h3 className="text-2xl font-black text-ink-black mb-6 leading-tight group-hover:text-signal-orange transition-colors">
+                  {plan.title}
+                </h3>
+
+                <div className="space-y-4 text-slate-gray font-medium text-sm">
+                  <div className="flex items-center gap-3">
+                    <Calendar size={18} className="text-zinc-300" />
+                    <span>{formatDateRange(plan.startDate, plan.endDate)}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <FileText size={18} className="text-zinc-300" />
+                    <span>包含 {draftCounts[plan.id] ?? 0} 篇关联草稿</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 mt-8 relative z-10">
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openEditDialog(plan);
+                    }}
+                    className="px-4 py-2 border border-zinc-200 rounded-full text-xs font-bold text-zinc-500 hover:text-ink-black hover:border-zinc-300 transition-colors"
+                  >
+                    编辑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleDelete(plan.id);
+                    }}
+                    className="px-4 py-2 border border-zinc-200 rounded-full text-xs font-bold text-zinc-500 hover:text-red-600 hover:border-red-200 transition-colors"
+                  >
+                    删除
+                  </button>
                 </div>
               </div>
+            ))}
+          </div>
 
-              <div className="flex items-center gap-3 mt-8 relative z-10">
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    openEditDialog(plan);
-                  }}
-                  className="px-4 py-2 border border-zinc-200 rounded-full text-xs font-bold text-zinc-500 hover:text-ink-black hover:border-zinc-300 transition-colors"
-                >
-                  编辑
-                </button>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    handleDelete(plan.id);
-                  }}
-                  className="px-4 py-2 border border-zinc-200 rounded-full text-xs font-bold text-zinc-500 hover:text-red-600 hover:border-red-200 transition-colors"
-                >
-                  删除
-                </button>
+          <section className="bento-card p-6 hidden lg:block">
+            <div className="flex items-end justify-between gap-6 border-b border-zinc-100 pb-5">
+              <div>
+                <h2 className="text-2xl font-black text-ink-black">计划排期视图</h2>
+                <p className="mt-1 text-sm font-medium text-slate-gray">按时间、状态与草稿挂载关系快速扫描。</p>
               </div>
+              <button
+                type="button"
+                onClick={openCreateDialog}
+                className="rounded-full border border-zinc-200 px-5 py-2 text-xs font-black text-zinc-500 transition-colors hover:border-signal-orange hover:text-signal-orange"
+              >
+                添加排期
+              </button>
             </div>
-          ))}
-        </div>
+
+            <div className="mt-2 divide-y divide-zinc-100">
+              {plans.map((plan) => (
+                <div key={`schedule-${plan.id}`} className="grid grid-cols-12 items-center gap-4 py-5">
+                  <div className="col-span-4">
+                    <p className="text-base font-black text-ink-black">{plan.title}</p>
+                    <p className="mt-1 text-xs font-bold text-zinc-400">{plan.category || '未分类'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <span
+                      className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-black uppercase ${statusPillClass(
+                        plan.status,
+                      )}`}
+                    >
+                      {planStatusLabel(plan.status)}
+                    </span>
+                  </div>
+                  <div className="col-span-3 text-sm font-bold text-slate-gray">
+                    {formatDateRange(plan.startDate, plan.endDate)}
+                  </div>
+                  <div className="col-span-1 text-sm font-black text-ink-black">{draftCounts[plan.id] ?? 0}</div>
+                  <div className="col-span-2 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/plans/${plan.id}`)}
+                      className="rounded-full bg-zinc-100 px-4 py-2 text-xs font-black text-ink-black transition-colors hover:bg-ink-black hover:text-white"
+                    >
+                      进入详情
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
       )}
 
       <Modal
@@ -285,6 +347,15 @@ export default function Plans() {
           </div>
         </form>
       </Modal>
+    </div>
+  );
+}
+
+function PlanMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="bento-card px-6 py-5">
+      <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{label}</p>
+      <p className="mt-2 text-3xl font-black text-ink-black">{value}</p>
     </div>
   );
 }

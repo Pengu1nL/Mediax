@@ -1,13 +1,29 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 
 describe('App routing', () => {
   beforeEach(() => {
     window.localStorage.clear();
   });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function signInSession() {
+    window.localStorage.setItem(
+      'mediax.session.v1',
+      JSON.stringify({
+        id: 'admin-1',
+        name: 'Mediax Admin',
+        email: 'admin@mediax.local',
+        role: 'admin',
+      }),
+    );
+  }
 
   it('redirects unauthenticated users to login and returns them after sign in', async () => {
     const user = userEvent.setup();
@@ -60,5 +76,37 @@ describe('App routing', () => {
     expect(await screen.findByRole('heading', { name: '行业新闻' })).toBeInTheDocument();
     expect(screen.getByText('教育 / 民办高中')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '内容生产热力' })).not.toBeInTheDocument();
+  });
+
+  it('asks for confirmation before deleting a plan task', async () => {
+    signInSession();
+    const user = userEvent.setup();
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    render(
+      <MemoryRouter initialEntries={['/plans/p1']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('主视觉海报发布 - 微信公众号')).toBeInTheDocument();
+
+    await user.click(screen.getAllByRole('button', { name: '删除' })[0]);
+
+    expect(confirm).toHaveBeenCalledWith('删除任务后，关联草稿会保留但不再挂在任务下。确认继续吗？');
+    expect(screen.getByText('主视觉海报发布 - 微信公众号')).toBeInTheDocument();
+  });
+
+  it('renders asset thumbnails for folders in the library grid', async () => {
+    signInSession();
+
+    render(
+      <MemoryRouter initialEntries={['/library']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole('heading', { name: '所有素材' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '2024 春季营销中心' })).toBeInTheDocument();
   });
 });

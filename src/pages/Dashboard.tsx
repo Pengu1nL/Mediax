@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, FileText, Newspaper, TrendingUp, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import BrandMark from '../components/BrandMark';
 import { useAppStore } from '../context/AppContext';
 import { getIndustryNews } from '../data/industryNews';
 import { planStatusLabel } from '../utils/presentation';
@@ -15,34 +16,37 @@ export default function Dashboard() {
   const liveChannels = brand.channels.filter((channel) => channel.active).length;
   const recentPlans = plans.slice(0, 4);
   const industryNews = getIndustryNews(brand.industry);
+  const nextActiveTask = planTasks.find((task) => task.status === 'active') ?? planTasks[0];
 
   return (
-    <div className="space-y-12 pb-20">
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative">
-        <div className="lg:col-span-4 flex flex-col items-center lg:items-start">
-          <div className="relative w-64 h-64 md:w-80 md:h-80">
-            <div className="absolute inset-0 rounded-full shadow-2xl bg-white p-2">
-              <div className="w-full h-full rounded-full overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&q=80&w=800"
-                  alt="AI Placeholder"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-            <motion.div
-              animate={{ scale: [1, 1.1, 1] }}
-              transition={{ repeat: Infinity, duration: 4 }}
-              className="absolute -right-4 top-1/2 w-4 h-4 rounded-full bg-signal-orange shadow-lg"
-            />
+    <div className="space-y-8 pb-20">
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch relative">
+        <div className="lg:col-span-5 bento-card p-8 flex flex-col justify-between overflow-hidden relative">
+          <div className="absolute -right-10 -top-10 opacity-20">
+            <BrandMark name={brand.name} size="compact" />
           </div>
-          <div className="mt-8 text-center lg:text-left">
-            <h1 className="text-4xl font-bold tracking-tight text-ink-black">校区运营全景</h1>
-            <p className="text-slate-gray mt-2 font-medium">{brand.name} 品牌主理台</p>
+          <div className="relative z-10">
+            <p className="text-[10px] font-black uppercase tracking-[0.35em] text-signal-orange">
+              今日工作台
+            </p>
+            <h1 className="text-5xl font-black text-ink-black mt-4">校区运营全景</h1>
+            <p className="text-slate-gray mt-3 font-medium leading-relaxed max-w-md">
+              {brand.name} 的计划、任务与草稿已经汇总到同一张运营视图。
+            </p>
+          </div>
+          <div className="relative z-10 mt-10 grid grid-cols-2 gap-4">
+            <div className="rounded-2xl bg-zinc-50 px-5 py-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">品牌渠道</p>
+              <p className="mt-2 text-3xl font-black text-ink-black">{liveChannels}</p>
+            </div>
+            <div className="rounded-2xl bg-orange-50 px-5 py-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-signal-orange">待推进</p>
+              <p className="mt-2 text-3xl font-black text-ink-black">{activeTasks}</p>
+            </div>
           </div>
         </div>
 
-        <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-6">
           <StatCard
             title="进行中的计划"
             value={`${activePlans}`}
@@ -57,15 +61,18 @@ export default function Dashboard() {
             icon={<FileText size={20} />}
             color="bg-zinc-100 text-ink-black"
           />
-          <div className="md:col-span-2 bg-ink-black rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between text-white overflow-hidden relative group">
-            <div className="relative z-10">
-              <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">工作台联动状态</span>
-              <h2 className="text-3xl font-bold mt-2">已接通 {activeTasks} 项执行中的任务</h2>
+          <div className="md:col-span-2 bg-ink-black rounded-3xl p-8 flex flex-col md:flex-row md:items-center justify-between text-white overflow-hidden relative group min-h-[180px]">
+            <div className="relative z-10 max-w-xl">
+              <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">当前执行焦点</span>
+              <h2 className="text-3xl font-bold mt-2">{nextActiveTask?.title ?? '暂无执行中的任务'}</h2>
+              <p className="mt-3 text-sm font-medium text-zinc-400">
+                {nextActiveTask?.subtitle ?? '创建计划任务后，这里会优先显示下一步动作。'}
+              </p>
             </div>
             <div className="relative z-10 flex items-center gap-6 mt-6 md:mt-0">
               <div className="text-right">
-                <p className="text-sm text-zinc-400">已绑定渠道</p>
-                <p className="text-2xl font-bold text-light-orange">{liveChannels}</p>
+                <p className="text-sm text-zinc-400">联动任务</p>
+                <p className="text-2xl font-bold text-light-orange">{activeTasks}</p>
               </div>
               <Link
                 to="/plans"

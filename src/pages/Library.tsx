@@ -156,18 +156,30 @@ function AssetCard({
   asset: ReturnType<typeof useAppStore>['assets'][number];
 }) {
   const isFolder = asset.type === 'folder';
+  const hasThumbnail = Boolean(asset.thumbnail);
+  const [thumbnailFailed, setThumbnailFailed] = useState(false);
+  const showRemoteThumbnail = hasThumbnail && !thumbnailFailed;
 
   return (
     <div className="relative flex flex-col items-center group cursor-default">
       <div className="w-full aspect-square bg-zinc-50 rounded-3xl border border-black/5 shadow-sm overflow-hidden mb-3 relative group-hover:shadow-md group-hover:border-signal-orange/20 transition-all duration-300">
-        {!isFolder && asset.thumbnail ? (
-          <img
-            src={asset.thumbnail}
-            alt={asset.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
+        <AssetFallbackCover asset={asset} />
+        {showRemoteThumbnail ? (
+          <>
+            <img
+              src={asset.thumbnail}
+              alt={asset.name}
+              onError={() => setThumbnailFailed(true)}
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              referrerPolicy="no-referrer"
+            />
+            {isFolder ? (
+              <div className="absolute left-3 top-3 h-9 w-9 rounded-full bg-white/90 backdrop-blur flex items-center justify-center text-signal-orange shadow-sm">
+                <Folder size={20} strokeWidth={1.8} />
+              </div>
+            ) : null}
+          </>
+        ) : !hasThumbnail ? (
           <div className={`w-full h-full flex items-center justify-center ${isFolder ? 'bg-zinc-50' : 'bg-zinc-100'}`}>
             {isFolder ? (
               <Folder size={56} className="text-signal-orange" strokeWidth={1.5} fill="currentColor" fillOpacity={0.1} />
@@ -177,13 +189,33 @@ function AssetCard({
               <Video size={48} className="text-zinc-300" />
             )}
           </div>
-        )}
+        ) : null}
       </div>
       <div className="text-center px-1 w-full">
         <p className="text-[13px] font-bold text-ink-black truncate">{asset.name}</p>
         <p className="text-[11px] font-medium text-slate-gray mt-0.5 opacity-60">
           {isFolder ? asset.size : asset.updatedAt}
         </p>
+      </div>
+    </div>
+  );
+}
+
+function AssetFallbackCover({
+  asset,
+}: {
+  asset: ReturnType<typeof useAppStore>['assets'][number];
+}) {
+  const label = asset.name.replace(/\s+/g, '').slice(0, 2) || 'MX';
+
+  return (
+    <div className="absolute inset-0 bg-lifted-cream">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_24%,rgba(207,69,0,0.16),transparent_30%),radial-gradient(circle_at_70%_78%,rgba(20,20,19,0.10),transparent_36%)]" />
+      <div className="absolute -left-8 top-7 h-16 w-[130%] rotate-[-16deg] rounded-full bg-white/80" />
+      <div className="absolute inset-0 flex items-center justify-center">
+              <span className="rounded-full bg-white/85 px-4 py-2 text-lg font-black text-signal-orange shadow-sm">
+                {label}
+              </span>
       </div>
     </div>
   );

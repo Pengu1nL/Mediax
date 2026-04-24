@@ -68,6 +68,7 @@ export default function Login() {
               <input
                 id="login-email"
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 className="w-full rounded-3xl border border-zinc-100 bg-zinc-50 px-6 py-4 text-lg font-bold"
@@ -81,6 +82,7 @@ export default function Login() {
               <input
                 id="login-password"
                 type="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 className="w-full rounded-3xl border border-zinc-100 bg-zinc-50 px-6 py-4 text-lg font-bold"

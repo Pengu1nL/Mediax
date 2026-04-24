@@ -1,6 +1,7 @@
 import React from 'react';
 import { Camera, Edit3, Globe, Share2, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import BrandMark from '../components/BrandMark';
 import { useAppStore } from '../context/AppContext';
 
 export default function Brand() {
@@ -17,11 +18,7 @@ export default function Brand() {
           </div>
           <div className="relative w-72 h-72 md:w-96 md:h-96 rounded-full glass-nav p-6 shadow-2xl">
             <div className="w-full h-full rounded-full overflow-hidden bg-white flex items-center justify-center p-4">
-              <img
-                src="https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&q=80&w=800"
-                alt="AI Generated Brand Avatar"
-                className="w-full h-full object-cover rounded-full"
-              />
+              <BrandMark name={brand.name} />
             </div>
             <Link
               to="/onboarding"
