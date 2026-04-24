@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ArrowRight, FileText, FolderOpen, TrendingUp, Users } from 'lucide-react';
+import { ArrowRight, FileText, Newspaper, TrendingUp, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAppStore } from '../context/AppContext';
+import { getIndustryNews } from '../data/industryNews';
 import { planStatusLabel } from '../utils/presentation';
 
 export default function Dashboard() {
@@ -13,6 +14,7 @@ export default function Dashboard() {
   const readyDrafts = drafts.filter((draft) => draft.status === 'ready').length;
   const liveChannels = brand.channels.filter((channel) => channel.active).length;
   const recentPlans = plans.slice(0, 4);
+  const industryNews = getIndustryNews(brand.industry);
 
   return (
     <div className="space-y-12 pb-20">
@@ -98,43 +100,29 @@ export default function Dashboard() {
         </div>
 
         <div className="bento-card p-8 min-h-[400px]">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-xl font-bold">内容生产热力</h3>
-            <div className="flex items-center gap-2 text-xs text-slate-gray">
-              <span>低</span>
-              <div className="flex gap-1">
-                {[1, 2, 3, 4].map((value) => (
-                  <div
-                    key={value}
-                    className={`w-3 h-3 rounded-sm ${
-                      value === 1
-                        ? 'bg-zinc-100'
-                        : value === 2
-                          ? 'bg-orange-200'
-                          : value === 3
-                            ? 'bg-orange-400'
-                            : 'bg-signal-orange'
-                    }`}
-                  />
-                ))}
-              </div>
-              <span>高</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <h3 className="text-xl font-bold">行业新闻</h3>
+            <div className="flex items-center gap-2 rounded-full bg-zinc-100 px-4 py-2 text-xs font-bold text-slate-gray">
+              <Newspaper size={14} />
+              <span>{brand.industry}</span>
             </div>
           </div>
-          <div className="grid grid-cols-7 gap-2">
-            {Array.from({ length: 28 }).map((_, index) => {
-              const isPeak = index < drafts.length || index % 6 === 0;
-              const isMid = index < planTasks.length + 6 || index % 5 === 0;
-
-              return (
-                <div
-                  key={index}
-                  className={`aspect-square rounded-md ${
-                    isPeak ? 'bg-signal-orange' : isMid ? 'bg-orange-200' : 'bg-zinc-100'
-                  }`}
-                />
-              );
-            })}
+          <div className="space-y-4">
+            {industryNews.map((news) => (
+              <article key={news.id} className="rounded-2xl border border-zinc-100 bg-zinc-50 px-5 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="rounded-full bg-orange-100 px-3 py-1 text-[11px] font-black text-signal-orange">
+                    {news.tag}
+                  </span>
+                  <time className="text-xs font-bold text-zinc-400" dateTime={news.publishedAt}>
+                    {news.publishedAt}
+                  </time>
+                </div>
+                <h4 className="mt-3 text-base font-black leading-snug text-ink-black">{news.title}</h4>
+                <p className="mt-2 text-sm font-medium leading-relaxed text-slate-gray">{news.summary}</p>
+                <p className="mt-3 text-xs font-bold text-zinc-400">{news.source}</p>
+              </article>
+            ))}
           </div>
         </div>
       </section>

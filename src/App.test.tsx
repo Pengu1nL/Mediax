@@ -43,4 +43,22 @@ describe('App routing', () => {
     const navigation = await screen.findByRole('navigation');
     expect(navigation).not.toHaveClass('fixed');
   });
+
+  it('renders industry news on the dashboard after sign in', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await user.type(screen.getByLabelText('邮箱'), 'admin@mediax.local');
+    await user.type(screen.getByLabelText('密码'), 'mediax2026');
+    await user.click(screen.getByRole('button', { name: '登录并继续' }));
+
+    expect(await screen.findByRole('heading', { name: '行业新闻' })).toBeInTheDocument();
+    expect(screen.getByText('教育 / 民办高中')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '内容生产热力' })).not.toBeInTheDocument();
+  });
 });
