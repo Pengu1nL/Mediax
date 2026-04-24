@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { DEFAULT_ADMIN_CREDENTIALS } from '../constants';
 import { InlineAlert } from '../components/PageState';
 import { useAppStore } from '../context/AppContext';
 
@@ -15,7 +14,7 @@ export default function Login() {
 
   const redirect = new URLSearchParams(location.search).get('redirect') || '/dashboard';
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError('');
     clearError();
@@ -25,7 +24,7 @@ export default function Login() {
       return;
     }
 
-    const result = login({
+    const result = await login({
       email,
       password,
     });
@@ -53,9 +52,8 @@ export default function Login() {
             </p>
           </div>
           <div className="space-y-3">
-            <div className="text-xs font-black uppercase tracking-[0.35em] text-zinc-500">Demo Credentials</div>
-            <p className="text-sm font-bold">{DEFAULT_ADMIN_CREDENTIALS.email}</p>
-            <p className="text-sm font-bold">{DEFAULT_ADMIN_CREDENTIALS.password}</p>
+            <div className="text-xs font-black uppercase tracking-[0.35em] text-zinc-500">首发版本</div>
+            <p className="text-sm font-bold text-zinc-400">单品牌 · 单管理员</p>
           </div>
         </div>
 

@@ -11,45 +11,45 @@ describe('localStorage repositories', () => {
     window.localStorage.clear();
   });
 
-  it('hydrates seed data only once and preserves later edits', () => {
+  it('hydrates seed data only once and preserves later edits', async () => {
     const repositories = createLocalStorageRepositories(window.localStorage);
 
-    const originalBrand = repositories.brand.getProfile();
+    const originalBrand = await repositories.brand.getProfile();
     expect(originalBrand.name).toBe('上海建桥融高');
 
-    repositories.brand.saveProfile({
+    await repositories.brand.saveProfile({
       ...originalBrand,
       name: 'Mediax 实验品牌',
     });
 
     const nextRepositories = createLocalStorageRepositories(window.localStorage);
-    expect(nextRepositories.brand.getProfile().name).toBe('Mediax 实验品牌');
+    expect((await nextRepositories.brand.getProfile()).name).toBe('Mediax 实验品牌');
   });
 
-  it('persists login session and clears it on logout', () => {
+  it('persists login session and clears it on logout', async () => {
     const repositories = createLocalStorageRepositories(window.localStorage);
 
-    expect(repositories.session.getCurrentUser()).toBeNull();
+    expect(await repositories.session.getCurrentUser()).toBeNull();
 
-    repositories.session.login({
+    await repositories.session.login({
       email: 'admin@mediax.local',
       password: 'mediax2026',
     });
 
-    expect(repositories.session.getCurrentUser()).toMatchObject({
+    expect(await repositories.session.getCurrentUser()).toMatchObject({
       name: 'Mediax Admin',
       role: 'admin',
     });
 
-    repositories.session.logout();
+    await repositories.session.logout();
 
-    expect(repositories.session.getCurrentUser()).toBeNull();
+    expect(await repositories.session.getCurrentUser()).toBeNull();
   });
 
-  it('creates a plan, task and linked draft as a single persisted workflow', () => {
+  it('creates a plan, task and linked draft as a single persisted workflow', async () => {
     const repositories = createLocalStorageRepositories(window.localStorage);
 
-    const plan = repositories.plans.createPlan({
+    const plan = await repositories.plans.createPlan({
       title: '2026 春季开放日传播',
       category: '开放日',
       status: 'draft',
@@ -57,14 +57,14 @@ describe('localStorage repositories', () => {
       endDate: '2026-03-30',
     } satisfies CreatePlanInput);
 
-    const task = repositories.plans.createTask(plan.id, {
+    const task = await repositories.plans.createTask(plan.id, {
       title: '公众号预热头图发布',
       executionType: 'single',
       schedule: '2026-03-02 10:00',
       status: 'pending',
     } satisfies CreatePlanTaskInput);
 
-    const draft = repositories.drafts.createDraft({
+    const draft = await repositories.drafts.createDraft({
       planId: plan.id,
       taskId: task.id,
       platform: '微信公众号',
@@ -75,15 +75,16 @@ describe('localStorage repositories', () => {
       content: '这里是正文',
     } satisfies CreateDraftInput);
 
-    repositories.plans.updateTask(plan.id, task.id, {
+    await repositories.plans.updateTask(plan.id, task.id, {
       linkedDraftId: draft.id,
       status: 'active',
     });
 
     const hydratedRepositories = createLocalStorageRepositories(window.localStorage);
-    const hydratedPlan = hydratedRepositories.plans.getPlanById(plan.id);
-    const hydratedTask = hydratedRepositories.plans.getTasksByPlanId(plan.id)[0];
-    const hydratedDraft = hydratedRepositories.drafts.getDraftById(draft.id);
+    const hydratedPlan = await hydratedRepositories.plans.getPlanById(plan.id);
+    const hydratedTasks = await hydratedRepositories.plans.getTasksByPlanId(plan.id);
+    const hydratedTask = hydratedTasks[0];
+    const hydratedDraft = await hydratedRepositories.drafts.getDraftById(draft.id);
 
     expect(hydratedPlan?.title).toBe('2026 春季开放日传播');
     expect(hydratedTask).toMatchObject({

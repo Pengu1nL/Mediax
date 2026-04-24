@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
+import { createLocalStorageRepositories } from './repositories/localStorageRepositories';
 
 describe('App routing', () => {
   beforeEach(() => {
@@ -27,10 +28,11 @@ describe('App routing', () => {
 
   it('redirects unauthenticated users to login and returns them after sign in', async () => {
     const user = userEvent.setup();
+    const repos = createLocalStorageRepositories(window.localStorage);
 
     render(
       <MemoryRouter initialEntries={['/plans']}>
-        <App />
+        <App repositories={repos} />
       </MemoryRouter>,
     );
 
@@ -45,12 +47,15 @@ describe('App routing', () => {
 
   it('renders a non-fixed top navigation after sign in', async () => {
     const user = userEvent.setup();
+    const repos = createLocalStorageRepositories(window.localStorage);
 
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
-        <App />
+        <App repositories={repos} />
       </MemoryRouter>,
     );
+
+    expect(await screen.findByRole('heading', { name: '进入 Mediax 工作台' })).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('邮箱'), 'admin@mediax.local');
     await user.type(screen.getByLabelText('密码'), 'mediax2026');
@@ -62,12 +67,15 @@ describe('App routing', () => {
 
   it('renders industry news on the dashboard after sign in', async () => {
     const user = userEvent.setup();
+    const repos = createLocalStorageRepositories(window.localStorage);
 
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
-        <App />
+        <App repositories={repos} />
       </MemoryRouter>,
     );
+
+    expect(await screen.findByRole('heading', { name: '进入 Mediax 工作台' })).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('邮箱'), 'admin@mediax.local');
     await user.type(screen.getByLabelText('密码'), 'mediax2026');
@@ -82,10 +90,11 @@ describe('App routing', () => {
     signInSession();
     const user = userEvent.setup();
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const repos = createLocalStorageRepositories(window.localStorage);
 
     render(
       <MemoryRouter initialEntries={['/plans/p1']}>
-        <App />
+        <App repositories={repos} />
       </MemoryRouter>,
     );
 
@@ -99,10 +108,11 @@ describe('App routing', () => {
 
   it('shows local folder access guidance in unsupported browsers', async () => {
     signInSession();
+    const repos = createLocalStorageRepositories(window.localStorage);
 
     render(
       <MemoryRouter initialEntries={['/library']}>
-        <App />
+        <App repositories={repos} />
       </MemoryRouter>,
     );
 

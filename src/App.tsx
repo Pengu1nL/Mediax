@@ -109,9 +109,9 @@ function ProtectedNotFound() {
   );
 }
 
-export default function App() {
+export default function App({ repositories }: { repositories?: import('./repositories/localStorageRepositories').AppRepositories }) {
   return (
-    <AppProvider>
+    <AppProvider repositories={repositories}>
       <Routes>
         <Route path="/login" element={<LoginRoute />} />
         <Route element={<RequireAuth />}>

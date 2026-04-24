@@ -1,10 +1,5 @@
 import { AppData, Asset, BrandProfile, Draft, Plan, PlanTask } from './types';
 
-export const DEFAULT_ADMIN_CREDENTIALS = {
-  email: 'admin@mediax.local',
-  password: 'mediax2026',
-} as const;
-
 export const SEED_ASSETS: Asset[] = [
   {
     id: 'f1',

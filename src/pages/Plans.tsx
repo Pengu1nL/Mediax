@@ -67,7 +67,7 @@ export default function Plans() {
     setDialogOpen(true);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!formState.title.trim() || !formState.startDate || !formState.endDate) {
@@ -88,19 +88,19 @@ export default function Plans() {
       endDate: formState.endDate,
     };
 
-    const plan = editingPlanId ? updatePlan(editingPlanId, payload) : createPlan(payload);
+    const plan = editingPlanId ? await updatePlan(editingPlanId, payload) : await createPlan(payload);
     if (plan) {
       setDialogOpen(false);
       setFormState(defaultFormState);
     }
   };
 
-  const handleDelete = (planId: string) => {
+  const handleDelete = async (planId: string) => {
     if (!window.confirm('删除计划后，关联任务会移除，草稿会保留但不再挂在计划下。确认继续吗？')) {
       return;
     }
 
-    deletePlan(planId);
+    await deletePlan(planId);
   };
 
   return (

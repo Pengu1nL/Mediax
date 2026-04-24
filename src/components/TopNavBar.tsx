@@ -85,7 +85,10 @@ export default function TopNavBar() {
         </div>
         <button
           type="button"
-          onClick={logout}
+          onClick={async () => {
+            await logout();
+            navigate('/login');
+          }}
           className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors text-ink-black/60 hover:text-signal-orange"
           aria-label="退出登录"
         >

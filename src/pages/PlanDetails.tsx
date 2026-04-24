@@ -81,7 +81,7 @@ export default function PlanDetails() {
     setDialogOpen(true);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!formState.title.trim() || !formState.schedule.trim()) {
@@ -98,8 +98,8 @@ export default function PlanDetails() {
     };
 
     const task = editingTaskId
-      ? updateTask(plan.id, editingTaskId, payload)
-      : createTask(plan.id, payload);
+      ? await updateTask(plan.id, editingTaskId, payload)
+      : await createTask(plan.id, payload);
 
     if (task) {
       setDialogOpen(false);
@@ -107,13 +107,13 @@ export default function PlanDetails() {
     }
   };
 
-  const handleDraftAction = (task: PlanTask) => {
+  const handleDraftAction = async (task: PlanTask) => {
     if (task.linkedDraftId) {
       navigate(`/drafts/${task.linkedDraftId}`);
       return;
     }
 
-    const draft = createDraft({
+    const draft = await createDraft({
       planId: plan.id,
       taskId: task.id,
       platform: '微信公众号',
@@ -125,7 +125,7 @@ export default function PlanDetails() {
     });
 
     if (draft) {
-      updateTask(plan.id, task.id, {
+      await updateTask(plan.id, task.id, {
         linkedDraftId: draft.id,
         status: task.status === 'pending' ? 'active' : task.status,
       });
@@ -133,12 +133,12 @@ export default function PlanDetails() {
     }
   };
 
-  const handleDeleteTask = (task: PlanTask) => {
+  const handleDeleteTask = async (task: PlanTask) => {
     if (!window.confirm('删除任务后，关联草稿会保留但不再挂在任务下。确认继续吗？')) {
       return;
     }
 
-    deleteTask(plan.id, task.id);
+    await deleteTask(plan.id, task.id);
   };
 
   return (

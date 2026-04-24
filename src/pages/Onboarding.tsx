@@ -21,7 +21,7 @@ export default function Onboarding() {
     setSummary(brand.summary);
   }, [brand]);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError('');
 
@@ -30,7 +30,7 @@ export default function Onboarding() {
       return;
     }
 
-    const savedProfile = saveBrandProfile({
+    const savedProfile = await saveBrandProfile({
       ...brand,
       name: name.trim(),
       industry: industry.trim(),

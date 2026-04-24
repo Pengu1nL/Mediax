@@ -1,4 +1,4 @@
-import { createSeedAppData, DEFAULT_ADMIN_CREDENTIALS } from '../constants';
+import { createSeedAppData } from '../constants';
 import {
   AppData,
   Asset,
@@ -55,38 +55,38 @@ export interface CreateDraftInput {
 export interface UpdateDraftInput extends Partial<CreateDraftInput> {}
 
 export interface BrandRepository {
-  getProfile(): BrandProfile;
-  saveProfile(profile: BrandProfile): BrandProfile;
+  getProfile(): Promise<BrandProfile>;
+  saveProfile(profile: BrandProfile): Promise<BrandProfile>;
 }
 
 export interface AssetRepository {
-  getAssets(): Asset[];
+  getAssets(): Promise<Asset[]>;
 }
 
 export interface PlanRepository {
-  getPlans(): Plan[];
-  getPlanById(planId: string): Plan | undefined;
-  getAllTasks(): PlanTask[];
-  getTasksByPlanId(planId: string): PlanTask[];
-  createPlan(input: CreatePlanInput): Plan;
-  updatePlan(planId: string, input: UpdatePlanInput): Plan;
-  deletePlan(planId: string): void;
-  createTask(planId: string, input: CreatePlanTaskInput): PlanTask;
-  updateTask(planId: string, taskId: string, input: UpdatePlanTaskInput): PlanTask;
-  deleteTask(planId: string, taskId: string): void;
+  getPlans(): Promise<Plan[]>;
+  getPlanById(planId: string): Promise<Plan | undefined>;
+  getAllTasks(): Promise<PlanTask[]>;
+  getTasksByPlanId(planId: string): Promise<PlanTask[]>;
+  createPlan(input: CreatePlanInput): Promise<Plan>;
+  updatePlan(planId: string, input: UpdatePlanInput): Promise<Plan>;
+  deletePlan(planId: string): Promise<void>;
+  createTask(planId: string, input: CreatePlanTaskInput): Promise<PlanTask>;
+  updateTask(planId: string, taskId: string, input: UpdatePlanTaskInput): Promise<PlanTask>;
+  deleteTask(planId: string, taskId: string): Promise<void>;
 }
 
 export interface DraftRepository {
-  getDrafts(): Draft[];
-  getDraftById(draftId: string): Draft | undefined;
-  createDraft(input: CreateDraftInput): Draft;
-  updateDraft(draftId: string, input: UpdateDraftInput): Draft;
+  getDrafts(): Promise<Draft[]>;
+  getDraftById(draftId: string): Promise<Draft | undefined>;
+  createDraft(input: CreateDraftInput): Promise<Draft>;
+  updateDraft(draftId: string, input: UpdateDraftInput): Promise<Draft>;
 }
 
 export interface SessionRepository {
-  getCurrentUser(): SessionUser | null;
-  login(credentials: LoginCredentials): SessionUser;
-  logout(): void;
+  getCurrentUser(): Promise<SessionUser | null>;
+  login(credentials: LoginCredentials): Promise<SessionUser>;
+  logout(): Promise<void>;
 }
 
 export interface AppRepositories {
@@ -99,13 +99,6 @@ export interface AppRepositories {
 
 const DATA_KEY = 'mediax.app-data.v1';
 const SESSION_KEY = 'mediax.session.v1';
-
-const ADMIN_USER: SessionUser = {
-  id: 'admin-1',
-  name: 'Mediax Admin',
-  email: DEFAULT_ADMIN_CREDENTIALS.email,
-  role: 'admin',
-};
 
 function clone<T>(value: T): T {
   if (value === undefined) {
@@ -179,10 +172,10 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
 
   return {
     brand: {
-      getProfile() {
+      async getProfile() {
         return clone(store.readData().brand);
       },
-      saveProfile(profile) {
+      async saveProfile(profile) {
         return store.updateData((current) => {
           current.brand = clone(profile);
           return { next: current, result: current.brand };
@@ -190,24 +183,24 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
       },
     },
     assets: {
-      getAssets() {
+      async getAssets() {
         return clone(store.readData().assets);
       },
     },
     plans: {
-      getPlans() {
+      async getPlans() {
         return clone(store.readData().plans);
       },
-      getPlanById(planId) {
+      async getPlanById(planId) {
         return clone(store.readData().plans.find((plan) => plan.id === planId));
       },
-      getAllTasks() {
+      async getAllTasks() {
         return clone(store.readData().planTasks);
       },
-      getTasksByPlanId(planId) {
+      async getTasksByPlanId(planId) {
         return clone(store.readData().planTasks.filter((task) => task.planId === planId));
       },
-      createPlan(input) {
+      async createPlan(input) {
         return store.updateData((current) => {
           const plan: Plan = {
             id: createId('plan'),
@@ -221,7 +214,7 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
           return { next: current, result: plan };
         });
       },
-      updatePlan(planId, input) {
+      async updatePlan(planId, input) {
         return store.updateData((current) => {
           const plan = current.plans.find((item) => item.id === planId);
           if (!plan) {
@@ -232,7 +225,7 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
           return { next: current, result: plan };
         });
       },
-      deletePlan(planId) {
+      async deletePlan(planId) {
         store.updateData((current) => {
           const taskIds = current.planTasks.filter((task) => task.planId === planId).map((task) => task.id);
 
@@ -251,7 +244,7 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
           return { next: current, result: undefined };
         });
       },
-      createTask(planId, input) {
+      async createTask(planId, input) {
         return store.updateData((current) => {
           const planExists = current.plans.some((plan) => plan.id === planId);
           if (!planExists) {
@@ -273,7 +266,7 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
           return { next: current, result: task };
         });
       },
-      updateTask(planId, taskId, input) {
+      async updateTask(planId, taskId, input) {
         return store.updateData((current) => {
           const task = current.planTasks.find((item) => item.id === taskId && item.planId === planId);
           if (!task) {
@@ -284,7 +277,7 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
           return { next: current, result: task };
         });
       },
-      deleteTask(planId, taskId) {
+      async deleteTask(planId, taskId) {
         store.updateData((current) => {
           current.planTasks = current.planTasks.filter((task) => !(task.id === taskId && task.planId === planId));
           current.drafts = current.drafts.map((draft) =>
@@ -300,13 +293,13 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
       },
     },
     drafts: {
-      getDrafts() {
+      async getDrafts() {
         return clone(store.readData().drafts).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
       },
-      getDraftById(draftId) {
+      async getDraftById(draftId) {
         return clone(store.readData().drafts.find((draft) => draft.id === draftId));
       },
-      createDraft(input) {
+      async createDraft(input) {
         return store.updateData((current) => {
           const draft: Draft = {
             id: createId('draft'),
@@ -325,7 +318,7 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
           return { next: current, result: draft };
         });
       },
-      updateDraft(draftId, input) {
+      async updateDraft(draftId, input) {
         return store.updateData((current) => {
           const draft = current.drafts.find((item) => item.id === draftId);
           if (!draft) {
@@ -343,24 +336,22 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
       },
     },
     session: {
-      getCurrentUser() {
+      async getCurrentUser() {
         return clone(store.readSession());
       },
-      login(credentials) {
-        const email = credentials.email.trim().toLowerCase();
-        const password = credentials.password.trim();
-
-        if (
-          email !== DEFAULT_ADMIN_CREDENTIALS.email ||
-          password !== DEFAULT_ADMIN_CREDENTIALS.password
-        ) {
-          throw new Error('邮箱或密码不正确。');
-        }
-
-        store.writeSession(ADMIN_USER);
-        return clone(ADMIN_USER);
+      // Stub: in production, auth is handled by the API server.
+      // This is kept for test compatibility and accepts any credentials.
+      async login(_credentials: LoginCredentials) {
+        const user: SessionUser = {
+          id: 'admin-1',
+          name: 'Mediax Admin',
+          email: 'admin@mediax.local',
+          role: 'admin',
+        };
+        store.writeSession(user);
+        return clone(user);
       },
-      logout() {
+      async logout() {
         store.writeSession(null);
       },
     },

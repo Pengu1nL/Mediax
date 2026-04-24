@@ -45,7 +45,7 @@ export default function DraftEditor() {
     );
   }
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setNotice('');
 
@@ -54,7 +54,7 @@ export default function DraftEditor() {
       return;
     }
 
-    const savedDraft = updateDraft(draft.id, {
+    const savedDraft = await updateDraft(draft.id, {
       title: title.trim(),
       platform: platform.trim(),
       group: group.trim(),
