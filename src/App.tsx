@@ -52,6 +52,17 @@ function LoginRoute() {
   return <Login />;
 }
 
+function RequireBrandSetup() {
+  const { brand } = useAppStore();
+  const location = useLocation();
+
+  if (!brand.setupComplete && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  return <Outlet />;
+}
+
 function ShellLayout() {
   const location = useLocation();
   const { error, clearError } = useAppStore();
@@ -116,16 +127,18 @@ export default function App({ repositories }: { repositories?: import('./reposit
         <Route path="/login" element={<LoginRoute />} />
         <Route element={<RequireAuth />}>
           <Route path="/onboarding" element={<Onboarding />} />
-          <Route element={<ShellLayout />}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/brand" element={<Brand />} />
-            <Route path="/library" element={<Library />} />
-            <Route path="/plans" element={<Plans />} />
-            <Route path="/plans/:planId" element={<PlanDetails />} />
-            <Route path="/drafts" element={<Drafts />} />
-            <Route path="/drafts/:draftId" element={<DraftEditor />} />
-            <Route path="*" element={<ProtectedNotFound />} />
+          <Route element={<RequireBrandSetup />}>
+            <Route element={<ShellLayout />}>
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/brand" element={<Brand />} />
+              <Route path="/library" element={<Library />} />
+              <Route path="/plans" element={<Plans />} />
+              <Route path="/plans/:planId" element={<PlanDetails />} />
+              <Route path="/drafts" element={<Drafts />} />
+              <Route path="/drafts/:draftId" element={<DraftEditor />} />
+              <Route path="*" element={<ProtectedNotFound />} />
+            </Route>
           </Route>
         </Route>
       </Routes>

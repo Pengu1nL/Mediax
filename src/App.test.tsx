@@ -26,9 +26,18 @@ describe('App routing', () => {
     );
   }
 
+  async function completeBrandSetup(repos: ReturnType<typeof createLocalStorageRepositories>) {
+    const brand = await repos.brand.getProfile();
+    await repos.brand.saveProfile({
+      ...brand,
+      setupComplete: true,
+    });
+  }
+
   it('redirects unauthenticated users to login and returns them after sign in', async () => {
     const user = userEvent.setup();
     const repos = createLocalStorageRepositories(window.localStorage);
+    await completeBrandSetup(repos);
 
     render(
       <MemoryRouter initialEntries={['/plans']}>
@@ -45,9 +54,29 @@ describe('App routing', () => {
     expect(await screen.findByRole('heading', { name: '发布计划' })).toBeInTheDocument();
   });
 
+  it('redirects authenticated users to onboarding until brand setup is complete', async () => {
+    const user = userEvent.setup();
+    const repos = createLocalStorageRepositories(window.localStorage);
+
+    render(
+      <MemoryRouter initialEntries={['/plans']}>
+        <App repositories={repos} />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole('heading', { name: '进入 Mediax 工作台' })).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('邮箱'), 'admin@mediax.local');
+    await user.type(screen.getByLabelText('密码'), 'mediax2026');
+    await user.click(screen.getByRole('button', { name: '登录并继续' }));
+
+    expect(await screen.findByRole('heading', { name: /定义您的品牌/ })).toBeInTheDocument();
+  });
+
   it('renders a non-fixed top navigation after sign in', async () => {
     const user = userEvent.setup();
     const repos = createLocalStorageRepositories(window.localStorage);
+    await completeBrandSetup(repos);
 
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
@@ -68,6 +97,7 @@ describe('App routing', () => {
   it('renders industry news on the dashboard after sign in', async () => {
     const user = userEvent.setup();
     const repos = createLocalStorageRepositories(window.localStorage);
+    await completeBrandSetup(repos);
 
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
@@ -91,6 +121,7 @@ describe('App routing', () => {
     const user = userEvent.setup();
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
     const repos = createLocalStorageRepositories(window.localStorage);
+    await completeBrandSetup(repos);
 
     render(
       <MemoryRouter initialEntries={['/plans/p1']}>
@@ -109,6 +140,7 @@ describe('App routing', () => {
   it('shows local folder access guidance in unsupported browsers', async () => {
     signInSession();
     const repos = createLocalStorageRepositories(window.localStorage);
+    await completeBrandSetup(repos);
 
     render(
       <MemoryRouter initialEntries={['/library']}>
