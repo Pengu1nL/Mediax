@@ -21,6 +21,8 @@ export interface BrandChannel {
   active: boolean;
 }
 
+export type ReviewPolicy = 'manual_required' | 'auto_if_low_risk' | 'auto_publish';
+
 export interface BrandProfile {
   id: string;
   name: string;
@@ -29,6 +31,12 @@ export interface BrandProfile {
   summary: string;
   website?: string;
   establishedAt?: string;
+  audience?: string;
+  positioning?: string;
+  toneOfVoice?: string;
+  doAndDonts?: string[];
+  defaultReviewPolicy: ReviewPolicy;
+  setupComplete: boolean;
   channels: BrandChannel[];
 }
 

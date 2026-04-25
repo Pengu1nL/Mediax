@@ -20,6 +20,8 @@ const brand: BrandProfile = {
   industry: 'content',
   keywords: [],
   summary: '',
+  defaultReviewPolicy: 'manual_required',
+  setupComplete: false,
   channels: [],
 };
 

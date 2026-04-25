@@ -76,6 +76,12 @@ export const SEED_BRAND_PROFILE: BrandProfile = {
   keywords: ['融合教育', '国际视野', '临港', '民办高中'],
   summary:
     '上海建桥融高是一所位于上海市临港的民办高中，致力于融合世界先进教育理念，培养具有家国情怀、国际视野、身心健康、学业优异的复合型人才。',
+  audience: '关注融合教育和国际化升学路径的学生家庭',
+  positioning: '临港区域融合教育品牌',
+  toneOfVoice: '专业、可信、温暖、有教育理想',
+  doAndDonts: ['避免制造升学焦虑', '避免未经证实的升学承诺'],
+  defaultReviewPolicy: 'manual_required',
+  setupComplete: false,
   channels: [
     { id: 'c1', name: '微信公众号', handle: '@建桥融高', kind: 'wechat', active: true },
     { id: 'c2', name: '小红书', handle: '@建桥融高', kind: 'xiaohongshu', active: true },

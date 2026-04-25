@@ -20,6 +20,8 @@ function dataWithDraft(): AppData {
       industry: 'content',
       keywords: [],
       summary: '',
+      defaultReviewPolicy: 'manual_required',
+      setupComplete: false,
       channels: [],
     },
     assets: [],

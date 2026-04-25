@@ -16,6 +16,8 @@ describe('localStorage repositories', () => {
 
     const originalBrand = await repositories.brand.getProfile();
     expect(originalBrand.name).toBe('上海建桥融高');
+    expect(originalBrand.defaultReviewPolicy).toBe('manual_required');
+    expect(originalBrand.setupComplete).toBe(false);
 
     await repositories.brand.saveProfile({
       ...originalBrand,
@@ -24,6 +26,36 @@ describe('localStorage repositories', () => {
 
     const nextRepositories = createLocalStorageRepositories(window.localStorage);
     expect((await nextRepositories.brand.getProfile()).name).toBe('Mediax 实验品牌');
+  });
+
+  it('persists the extended brand context fields', async () => {
+    const repositories = createLocalStorageRepositories(window.localStorage);
+
+    await repositories.brand.saveProfile({
+      id: 'brand-1',
+      name: 'Mediax Test Brand',
+      industry: '教育',
+      website: 'https://example.com',
+      establishedAt: '2026',
+      keywords: ['融合教育', '国际视野'],
+      summary: '用于验证品牌上下文持久化。',
+      audience: '初高中学生家长',
+      positioning: '面向未来的融合教育品牌',
+      toneOfVoice: '可信、温暖、清晰',
+      doAndDonts: ['不夸大升学结果', '不使用焦虑营销'],
+      defaultReviewPolicy: 'manual_required',
+      setupComplete: true,
+      channels: [],
+    });
+
+    const saved = await repositories.brand.getProfile();
+
+    expect(saved.audience).toBe('初高中学生家长');
+    expect(saved.positioning).toBe('面向未来的融合教育品牌');
+    expect(saved.toneOfVoice).toBe('可信、温暖、清晰');
+    expect(saved.doAndDonts).toEqual(['不夸大升学结果', '不使用焦虑营销']);
+    expect(saved.defaultReviewPolicy).toBe('manual_required');
+    expect(saved.setupComplete).toBe(true);
   });
 
   it('persists login session and clears it on logout', async () => {
