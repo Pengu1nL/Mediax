@@ -18,6 +18,7 @@ function emptyData(): AppData {
       channels: [],
     },
     assets: [],
+    knowledgeItems: [],
     plans: [],
     planTasks: [],
     drafts: [],

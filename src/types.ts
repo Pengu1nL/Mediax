@@ -22,6 +22,9 @@ export interface BrandChannel {
 }
 
 export type ReviewPolicy = 'manual_required' | 'auto_if_low_risk' | 'auto_publish';
+export type KnowledgeSourceType = 'asset' | 'website' | 'manual_note' | 'historic_content';
+export type KnowledgeContentType = 'text' | 'image' | 'video' | 'pdf' | 'document' | 'spreadsheet' | 'presentation';
+export type KnowledgeProcessingStatus = 'queued' | 'processing' | 'ready' | 'failed';
 
 export interface BrandProfile {
   id: string;
@@ -38,6 +41,24 @@ export interface BrandProfile {
   defaultReviewPolicy: ReviewPolicy;
   setupComplete: boolean;
   channels: BrandChannel[];
+}
+
+export interface BrandKnowledgeItem {
+  id: string;
+  brandId: string;
+  sourceType: KnowledgeSourceType;
+  sourceName: string;
+  sourceUri?: string;
+  contentType: KnowledgeContentType;
+  status: KnowledgeProcessingStatus;
+  summary: string;
+  tags: string[];
+  extractedText?: string;
+  assetIds: string[];
+  confidence: number;
+  error?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type PlanStatus = 'active' | 'draft' | 'completed';
@@ -95,6 +116,7 @@ export interface LoginCredentials {
 export interface AppData {
   brand: BrandProfile;
   assets: Asset[];
+  knowledgeItems: BrandKnowledgeItem[];
   plans: Plan[];
   planTasks: PlanTask[];
   drafts: Draft[];

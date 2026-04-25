@@ -20,6 +20,10 @@ const serviceMocks = vi.hoisted(() => ({
   writeFilesToDirectory: vi.fn(),
   writeFileTreeToDirectory: vi.fn(),
 }));
+const appContextMocks = vi.hoisted(() => ({
+  brand: { id: 'brand-1' },
+  createKnowledgeItem: vi.fn(),
+}));
 
 vi.mock('../services/localAssetLibrary', () => ({
   MAX_ASSET_FILE_SIZE_BYTES: 50 * 1024 * 1024,
@@ -38,6 +42,10 @@ vi.mock('../services/localAssetLibrary', () => ({
   scanAssetDirectory: serviceMocks.scanAssetDirectory,
   writeFilesToDirectory: serviceMocks.writeFilesToDirectory,
   writeFileTreeToDirectory: serviceMocks.writeFileTreeToDirectory,
+}));
+
+vi.mock('../context/AppContext', () => ({
+  useAppStore: () => appContextMocks,
 }));
 
 const rootHandle = { name: '素材库' } as FileSystemDirectoryHandle;
@@ -126,6 +134,11 @@ describe('Library page', () => {
     serviceMocks.writeFileTreeToDirectory.mockReset().mockResolvedValue({
       written: ['Campaign/poster.png'],
       skipped: [],
+    });
+    appContextMocks.createKnowledgeItem.mockReset().mockResolvedValue({
+      id: 'knowledge-1',
+      brandId: 'brand-1',
+      sourceName: 'poster.png',
     });
   });
 
@@ -279,5 +292,27 @@ describe('Library page', () => {
 
     expect(titleBlock).toHaveClass('overflow-hidden');
     expect(metadata).toHaveClass('truncate');
+  });
+
+  it('creates a brand knowledge item from local file metadata', async () => {
+    const user = userEvent.setup();
+    serviceMocks.getStoredRootDirectoryHandle.mockResolvedValue(rootHandle);
+
+    render(<Library />);
+
+    const campaignFolder = await screen.findByTestId('directory-card-campaign');
+    await user.click(within(campaignFolder).getByRole('button', { name: '打开文件夹 campaign' }));
+
+    await user.click(await screen.findByRole('button', { name: '加入品牌知识 poster.png' }));
+
+    expect(appContextMocks.createKnowledgeItem).toHaveBeenCalledWith(expect.objectContaining({
+      brandId: 'brand-1',
+      sourceType: 'asset',
+      sourceName: 'poster.png',
+      sourceUri: 'campaign/poster.png',
+      contentType: 'image',
+      assetIds: ['campaign/poster.png'],
+    }));
+    expect(await screen.findByText('已将「poster.png」加入品牌知识库。')).toBeInTheDocument();
   });
 });

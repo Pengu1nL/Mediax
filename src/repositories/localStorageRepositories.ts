@@ -2,10 +2,13 @@ import { createSeedAppData } from '../constants';
 import {
   AppData,
   Asset,
+  BrandKnowledgeItem,
   BrandProfile,
   Draft,
   DraftStatus,
   ExecutionType,
+  KnowledgeContentType,
+  KnowledgeSourceType,
   LoginCredentials,
   Plan,
   PlanStatus,
@@ -54,6 +57,19 @@ export interface CreateDraftInput {
 
 export interface UpdateDraftInput extends Partial<CreateDraftInput> {}
 
+export interface CreateKnowledgeItemInput {
+  brandId: string;
+  sourceType: KnowledgeSourceType;
+  sourceName: string;
+  sourceUri?: string;
+  contentType: KnowledgeContentType;
+  summary: string;
+  tags: string[];
+  extractedText?: string;
+  assetIds: string[];
+  confidence: number;
+}
+
 export interface BrandRepository {
   getProfile(): Promise<BrandProfile>;
   saveProfile(profile: BrandProfile): Promise<BrandProfile>;
@@ -83,6 +99,11 @@ export interface DraftRepository {
   updateDraft(draftId: string, input: UpdateDraftInput): Promise<Draft>;
 }
 
+export interface KnowledgeRepository {
+  getKnowledgeItems(brandId: string): Promise<BrandKnowledgeItem[]>;
+  createKnowledgeItem(input: CreateKnowledgeItemInput): Promise<BrandKnowledgeItem>;
+}
+
 export interface SessionRepository {
   getCurrentUser(): Promise<SessionUser | null>;
   login(credentials: LoginCredentials): Promise<SessionUser>;
@@ -92,6 +113,7 @@ export interface SessionRepository {
 export interface AppRepositories {
   brand: BrandRepository;
   assets: AssetRepository;
+  knowledge: KnowledgeRepository;
   plans: PlanRepository;
   drafts: DraftRepository;
   session: SessionRepository;
@@ -122,6 +144,13 @@ function normalizeExcerpt(input: { excerpt: string; content: string }): string {
   return input.content.trim().slice(0, 80);
 }
 
+function normalizeData(data: AppData): AppData {
+  return {
+    ...data,
+    knowledgeItems: data.knowledgeItems ?? [],
+  };
+}
+
 function createStore(storage: StorageLike) {
   const read = <T>(key: string): T | null => {
     const raw = storage.getItem(key);
@@ -138,7 +167,7 @@ function createStore(storage: StorageLike) {
   const readData = (): AppData => {
     const existing = read<AppData>(DATA_KEY);
     if (existing) {
-      return existing;
+      return normalizeData(existing);
     }
 
     const seeded = createSeedAppData();
@@ -185,6 +214,35 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
     assets: {
       async getAssets() {
         return clone(store.readData().assets);
+      },
+    },
+    knowledge: {
+      async getKnowledgeItems(brandId) {
+        return clone(store.readData().knowledgeItems.filter((item) => item.brandId === brandId));
+      },
+      async createKnowledgeItem(input) {
+        return store.updateData((current) => {
+          const now = new Date().toISOString();
+          const item: BrandKnowledgeItem = {
+            id: createId('knowledge'),
+            brandId: input.brandId,
+            sourceType: input.sourceType,
+            sourceName: input.sourceName,
+            sourceUri: input.sourceUri,
+            contentType: input.contentType,
+            status: 'ready',
+            summary: input.summary,
+            tags: input.tags,
+            extractedText: input.extractedText,
+            assetIds: input.assetIds,
+            confidence: input.confidence,
+            createdAt: now,
+            updatedAt: now,
+          };
+
+          current.knowledgeItems.unshift(item);
+          return { next: current, result: item };
+        });
       },
     },
     plans: {

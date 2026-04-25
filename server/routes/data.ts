@@ -3,9 +3,12 @@ import { requireAuth } from '../auth';
 import { loadData, updateData } from '../store';
 import {
   BrandProfile,
+  BrandKnowledgeItem,
   Draft,
   DraftStatus,
   ExecutionType,
+  KnowledgeContentType,
+  KnowledgeSourceType,
   Plan,
   PlanStatus,
   PlanTask,
@@ -22,6 +25,19 @@ function createId(prefix: string): string {
 function normalizeExcerpt(input: { excerpt: string; content: string }): string {
   const excerpt = input.excerpt.trim();
   return excerpt || input.content.trim().slice(0, 80);
+}
+
+interface CreateKnowledgeItemInput {
+  brandId: string;
+  sourceType: KnowledgeSourceType;
+  sourceName: string;
+  sourceUri?: string;
+  contentType: KnowledgeContentType;
+  summary: string;
+  tags?: string[];
+  extractedText?: string;
+  assetIds?: string[];
+  confidence?: number;
 }
 
 export function createDataRouter(): Router {
@@ -56,6 +72,55 @@ export function createDataRouter(): Router {
       res.json(profile);
     } catch (err) {
       res.status(500).json({ error: '保存品牌信息失败。' });
+    }
+  });
+
+  // ---- Brand Knowledge ----
+
+  router.get('/knowledge', async (req: Request, res: Response) => {
+    try {
+      const brandId = String(req.query.brandId ?? '');
+      const data = await loadData();
+      res.json(data.knowledgeItems.filter((item) => item.brandId === brandId));
+    } catch {
+      res.status(500).json({ error: '读取品牌知识失败。' });
+    }
+  });
+
+  router.post('/knowledge', async (req: Request, res: Response) => {
+    try {
+      const input = req.body as CreateKnowledgeItemInput;
+      if (!input.brandId || !input.sourceType || !input.sourceName || !input.contentType || !input.summary) {
+        res.status(400).json({ error: '品牌知识信息不完整。' });
+        return;
+      }
+
+      const item = await updateData((data) => {
+        const now = new Date().toISOString();
+        const knowledgeItem: BrandKnowledgeItem = {
+          id: createId('knowledge'),
+          brandId: input.brandId,
+          sourceType: input.sourceType,
+          sourceName: input.sourceName,
+          sourceUri: input.sourceUri,
+          contentType: input.contentType,
+          status: 'ready',
+          summary: input.summary,
+          tags: input.tags ?? [],
+          extractedText: input.extractedText,
+          assetIds: input.assetIds ?? [],
+          confidence: input.confidence ?? 1,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        data.knowledgeItems.unshift(knowledgeItem);
+        return { data, result: knowledgeItem };
+      });
+
+      res.status(201).json(item);
+    } catch {
+      res.status(500).json({ error: '创建品牌知识失败。' });
     }
   });
 

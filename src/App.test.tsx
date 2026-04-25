@@ -181,4 +181,28 @@ describe('App routing', () => {
     expect(await screen.findByText('当前浏览器不支持本地文件夹访问')).toBeInTheDocument();
     expect(screen.getByText('请使用 Chrome 或 Edge 打开 Mediax，再绑定本地素材文件夹。')).toBeInTheDocument();
   });
+
+  it('shows the brand knowledge count on the brand page', async () => {
+    signInSession();
+    const repos = createLocalStorageRepositories(window.localStorage);
+    await completeBrandSetup(repos);
+    await repos.knowledge.createKnowledgeItem({
+      brandId: 'brand-1',
+      sourceType: 'manual_note',
+      sourceName: '品牌语气规则',
+      contentType: 'text',
+      summary: '品牌表达保持专业、可信、温暖。',
+      tags: ['品牌语气'],
+      assetIds: [],
+      confidence: 0.9,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/brand']}>
+        <App repositories={repos} />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('品牌知识条目')).toBeInTheDocument();
+  });
 });

@@ -1,4 +1,4 @@
-import { AppData, Asset, BrandProfile, Draft, Plan, PlanTask } from './types';
+import { AppData, Asset, BrandKnowledgeItem, BrandProfile, Draft, Plan, PlanTask } from './types';
 
 export const SEED_ASSETS: Asset[] = [
   {
@@ -66,6 +66,8 @@ export const SEED_ASSETS: Asset[] = [
     thumbnail: 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&q=80&w=400',
   },
 ];
+
+export const SEED_KNOWLEDGE_ITEMS: BrandKnowledgeItem[] = [];
 
 export const SEED_BRAND_PROFILE: BrandProfile = {
   id: 'brand-1',
@@ -194,6 +196,7 @@ export function createSeedAppData(): AppData {
   return {
     brand: structuredClone(SEED_BRAND_PROFILE),
     assets: structuredClone(SEED_ASSETS),
+    knowledgeItems: structuredClone(SEED_KNOWLEDGE_ITEMS),
     plans: structuredClone(SEED_PLANS),
     planTasks: structuredClone(SEED_PLAN_TASKS),
     drafts: structuredClone(SEED_DRAFTS),

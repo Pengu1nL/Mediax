@@ -49,6 +49,7 @@ function defaultData(): AppData {
       { id: 'f7', name: '字体与排版', type: 'folder', size: '67 项目', updatedAt: '1周前', thumbnail: 'https://images.unsplash.com/photo-1572044162444-ad60f128bdea?auto=format&fit=crop&q=80&w=400' },
       { id: 'f8', name: '归档资产 2023', type: 'folder', size: '512 项目', updatedAt: '1周前', thumbnail: 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&q=80&w=400' },
     ],
+    knowledgeItems: [],
     plans: [
       { id: 'p1', title: '2024 秋季招生全案宣发', status: 'active', startDate: '2026-09-01', endDate: '2026-10-15', category: '招生季' },
       { id: 'p2', title: '建桥融高一周年校庆策划', status: 'draft', startDate: '2026-01-05', endDate: '2026-01-20', category: '校庆' },
@@ -67,10 +68,17 @@ function defaultData(): AppData {
   };
 }
 
+function normalizeData(data: AppData): AppData {
+  return {
+    ...data,
+    knowledgeItems: data.knowledgeItems ?? [],
+  };
+}
+
 export async function loadData(): Promise<AppData> {
   try {
     const raw = await readFile(dataPath(), 'utf-8');
-    return JSON.parse(raw) as AppData;
+    return normalizeData(JSON.parse(raw) as AppData);
   } catch {
     // First run: write seed data
     const seeded = defaultData();

@@ -1,6 +1,7 @@
 import {
   AppData,
   Asset,
+  BrandKnowledgeItem,
   BrandProfile,
   Draft,
   LoginCredentials,
@@ -11,6 +12,7 @@ import {
 import { apiClient } from '../api/client';
 import type {
   CreateDraftInput,
+  CreateKnowledgeItemInput,
   CreatePlanInput,
   CreatePlanTaskInput,
   UpdateDraftInput,
@@ -31,6 +33,11 @@ export interface ApiBrandRepository {
 
 export interface ApiAssetRepository {
   getAssets(): Promise<Asset[]>;
+}
+
+export interface ApiKnowledgeRepository {
+  getKnowledgeItems(brandId: string): Promise<BrandKnowledgeItem[]>;
+  createKnowledgeItem(input: CreateKnowledgeItemInput): Promise<BrandKnowledgeItem>;
 }
 
 export interface ApiPlanRepository {
@@ -56,6 +63,7 @@ export interface ApiDraftRepository {
 export interface ApiDataRepositories {
   brand: ApiBrandRepository;
   assets: ApiAssetRepository;
+  knowledge: ApiKnowledgeRepository;
   plans: ApiPlanRepository;
   drafts: ApiDraftRepository;
 }
@@ -107,6 +115,14 @@ export function createApiDataRepositories(): ApiDataRepositories {
       async getAssets() {
         const data = await fetchData();
         return data.assets;
+      },
+    },
+    knowledge: {
+      async getKnowledgeItems(brandId) {
+        return apiClient.get<BrandKnowledgeItem[]>(`/knowledge?brandId=${encodeURIComponent(brandId)}`);
+      },
+      async createKnowledgeItem(input) {
+        return apiClient.post<BrandKnowledgeItem>('/knowledge', input);
       },
     },
     plans: {

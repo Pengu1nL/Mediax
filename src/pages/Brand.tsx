@@ -6,7 +6,7 @@ import { useAppStore } from '../context/AppContext';
 import { getBrandProfileCompleteness } from '../utils/brandProfile';
 
 export default function Brand() {
-  const { brand } = useAppStore();
+  const { brand, knowledgeItems } = useAppStore();
   const completeness = getBrandProfileCompleteness(brand);
 
   return (
@@ -49,6 +49,10 @@ export default function Brand() {
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">品牌理解完整度</p>
                 <p className="text-lg font-black text-ink-black">{completeness}%</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">品牌知识条目</p>
+                <p className="text-lg font-black text-ink-black">{knowledgeItems.length}</p>
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">成立时间</p>

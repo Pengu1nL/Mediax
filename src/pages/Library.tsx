@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
+  BookOpen,
   CheckCircle2,
   Download,
   Edit3,
@@ -18,6 +19,7 @@ import {
   Upload,
   Video,
 } from 'lucide-react';
+import { useAppStore } from '../context/AppContext';
 import {
   MAX_ASSET_FILE_SIZE_BYTES,
   SUPPORTED_DOCUMENT_EXTENSIONS,
@@ -38,6 +40,7 @@ import {
   type DirectoryNode,
   type LocalAssetFile,
 } from '../services/localAssetLibrary';
+import { createKnowledgeSummaryFromText, inferKnowledgeTags } from '../services/knowledgeExtraction';
 
 type ViewMode = 'grid' | 'list';
 type LibraryStatus = 'checking' | 'unsupported' | 'unbound' | 'permission' | 'scanning' | 'ready' | 'error';
@@ -66,6 +69,7 @@ const FOLDER_INPUT_DIRECTORY_ATTRIBUTES = {
 };
 
 export default function Library() {
+  const { brand, createKnowledgeItem } = useAppStore();
   const [status, setStatus] = useState<LibraryStatus>('checking');
   const [rootHandle, setRootHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [scanResult, setScanResult] = useState<AssetScanResult | null>(null);
@@ -425,6 +429,45 @@ export default function Library() {
     }
   };
 
+  const handleCreateKnowledge = async (asset: LocalAssetFile) => {
+    const sourceText = [
+      asset.name,
+      asset.relativePath,
+      asset.type,
+      asset.mimeType,
+      asset.sizeLabel,
+      getAssetLocationLabel(asset),
+    ].join(' ');
+    const summary = createKnowledgeSummaryFromText(
+      `${asset.name} 位于 ${getAssetLocationLabel(asset)}，类型为 ${asset.type}，大小 ${asset.sizeLabel}。`,
+    );
+    const created = await createKnowledgeItem({
+      brandId: brand.id,
+      sourceType: 'asset',
+      sourceName: asset.name,
+      sourceUri: asset.relativePath,
+      contentType: asset.type,
+      summary,
+      tags: inferKnowledgeTags(sourceText),
+      extractedText: sourceText,
+      assetIds: [asset.id],
+      confidence: 0.8,
+    });
+
+    if (created) {
+      setNotice({
+        tone: 'success',
+        message: `已将「${asset.name}」加入品牌知识库。`,
+      });
+      return;
+    }
+
+    setNotice({
+      tone: 'error',
+      message: `无法将「${asset.name}」加入品牌知识库。`,
+    });
+  };
+
   if (status === 'unsupported') {
     return (
       <LibraryState
@@ -648,6 +691,7 @@ export default function Library() {
                   imageUrl={imageUrls[item.asset.id]}
                   onPreview={handlePreview}
                   onDownload={handleDownload}
+                  onCreateKnowledge={handleCreateKnowledge}
                   onRename={handleRename}
                   onDelete={handleDelete}
                 />
@@ -665,6 +709,7 @@ export default function Library() {
                   asset={item.asset}
                   onPreview={handlePreview}
                   onDownload={handleDownload}
+                  onCreateKnowledge={handleCreateKnowledge}
                   onRename={handleRename}
                   onDelete={handleDelete}
                 />
@@ -835,6 +880,7 @@ function AssetCard({
   imageUrl,
   onPreview,
   onDownload,
+  onCreateKnowledge,
   onRename,
   onDelete,
 }: {
@@ -843,6 +889,7 @@ function AssetCard({
   imageUrl?: string;
   onPreview: (asset: LocalAssetFile) => void;
   onDownload: (asset: LocalAssetFile) => void;
+  onCreateKnowledge: (asset: LocalAssetFile) => void;
   onRename: (asset: LocalAssetFile) => void;
   onDelete: (asset: LocalAssetFile) => void;
 }) {
@@ -860,6 +907,7 @@ function AssetCard({
             compact
             onPreview={onPreview}
             onDownload={onDownload}
+            onCreateKnowledge={onCreateKnowledge}
             onRename={onRename}
             onDelete={onDelete}
           />
@@ -877,6 +925,7 @@ function AssetRow({
   asset,
   onPreview,
   onDownload,
+  onCreateKnowledge,
   onRename,
   onDelete,
 }: {
@@ -884,6 +933,7 @@ function AssetRow({
   asset: LocalAssetFile;
   onPreview: (asset: LocalAssetFile) => void;
   onDownload: (asset: LocalAssetFile) => void;
+  onCreateKnowledge: (asset: LocalAssetFile) => void;
   onRename: (asset: LocalAssetFile) => void;
   onDelete: (asset: LocalAssetFile) => void;
 }) {
@@ -907,6 +957,7 @@ function AssetRow({
           asset={asset}
           onPreview={onPreview}
           onDownload={onDownload}
+          onCreateKnowledge={onCreateKnowledge}
           onRename={onRename}
           onDelete={onDelete}
         />
@@ -920,6 +971,7 @@ function AssetActions({
   compact = false,
   onPreview,
   onDownload,
+  onCreateKnowledge,
   onRename,
   onDelete,
 }: {
@@ -927,6 +979,7 @@ function AssetActions({
   compact?: boolean;
   onPreview: (asset: LocalAssetFile) => void;
   onDownload: (asset: LocalAssetFile) => void;
+  onCreateKnowledge: (asset: LocalAssetFile) => void;
   onRename: (asset: LocalAssetFile) => void;
   onDelete: (asset: LocalAssetFile) => void;
 }) {
@@ -941,6 +994,9 @@ function AssetActions({
       </button>
       <button type="button" className={buttonClass} onClick={() => onDownload(asset)} aria-label={`下载 ${asset.name}`}>
         <Download size={16} className="mx-auto" />
+      </button>
+      <button type="button" className={buttonClass} onClick={() => onCreateKnowledge(asset)} aria-label={`加入品牌知识 ${asset.name}`}>
+        <BookOpen size={16} className="mx-auto" />
       </button>
       <button type="button" className={buttonClass} onClick={() => onRename(asset)} aria-label={`重命名 ${asset.name}`}>
         <Edit3 size={16} className="mx-auto" />

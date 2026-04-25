@@ -11,6 +11,7 @@ import {
   createLocalStorageRepositories,
   type AppRepositories,
   type CreateDraftInput,
+  type CreateKnowledgeItemInput,
   type CreatePlanInput,
   type CreatePlanTaskInput,
   type UpdateDraftInput,
@@ -21,7 +22,16 @@ import {
   createApiSessionRepository,
   createApiDataRepositories,
 } from '../repositories/apiRepositories';
-import { AppData, BrandProfile, Draft, LoginCredentials, Plan, PlanTask, SessionUser } from '../types';
+import {
+  AppData,
+  BrandKnowledgeItem,
+  BrandProfile,
+  Draft,
+  LoginCredentials,
+  Plan,
+  PlanTask,
+  SessionUser,
+} from '../types';
 
 interface AppSnapshot extends AppData {
   currentUser: SessionUser | null;
@@ -52,6 +62,7 @@ interface AppContextValue extends AppSnapshot {
     draftId: string,
     input: UpdateDraftInput,
   ) => Promise<Draft | undefined>;
+  createKnowledgeItem: (input: CreateKnowledgeItemInput) => Promise<BrandKnowledgeItem | undefined>;
 }
 
 const seed = createSeedAppData();
@@ -101,7 +112,8 @@ export function AppProvider({
         dataRepos.plans.getAllTasks(),
         dataRepos.drafts.getDrafts(),
       ]);
-      setSnapshot({ brand, assets, plans, planTasks, drafts, currentUser });
+      const knowledgeItems = await dataRepos.knowledge.getKnowledgeItems(brand.id).catch(() => []);
+      setSnapshot({ brand, assets, knowledgeItems, plans, planTasks, drafts, currentUser });
       setError(null);
     } catch (nextError) {
       setError(getErrorMessage(nextError));
@@ -169,6 +181,7 @@ export function AppProvider({
       deleteTask: (planId, taskId) => runMutation(() => dataRepos.plans.deleteTask(planId, taskId)),
       createDraft: (input) => runMutation(() => dataRepos.drafts.createDraft(input)),
       updateDraft: (draftId, input) => runMutation(() => dataRepos.drafts.updateDraft(draftId, input)),
+      createKnowledgeItem: (input) => runMutation(() => dataRepos.knowledge.createKnowledgeItem(input)),
     }),
     [error, ready, refresh, dataRepos, session, runMutation, snapshot],
   );

@@ -52,6 +52,10 @@ function createRepositories(refreshDrafts: Promise<Draft[]>): AppRepositories {
     assets: {
       getAssets: vi.fn(async () => []),
     },
+    knowledge: {
+      getKnowledgeItems: vi.fn(async () => []),
+      createKnowledgeItem: vi.fn(),
+    },
     plans: {
       getPlans: vi.fn(async () => []),
       getPlanById: vi.fn(async () => undefined),
@@ -72,6 +76,47 @@ function createRepositories(refreshDrafts: Promise<Draft[]>): AppRepositories {
     },
     session: {
       getCurrentUser: vi.fn(async () => user),
+      login: vi.fn(async () => user),
+      logout: vi.fn(async () => undefined),
+    },
+  };
+}
+
+function createLoginRepositories(knowledgeError: Error): AppRepositories {
+  return {
+    brand: {
+      getProfile: vi.fn(async () => ({ ...brand, setupComplete: true })),
+      saveProfile: vi.fn(async (profile) => profile),
+    },
+    assets: {
+      getAssets: vi.fn(async () => []),
+    },
+    knowledge: {
+      getKnowledgeItems: vi.fn(async () => {
+        throw knowledgeError;
+      }),
+      createKnowledgeItem: vi.fn(),
+    },
+    plans: {
+      getPlans: vi.fn(async () => []),
+      getPlanById: vi.fn(async () => undefined),
+      getAllTasks: vi.fn(async () => []),
+      getTasksByPlanId: vi.fn(async () => []),
+      createPlan: vi.fn(),
+      updatePlan: vi.fn(),
+      deletePlan: vi.fn(async () => undefined),
+      createTask: vi.fn(),
+      updateTask: vi.fn(),
+      deleteTask: vi.fn(async () => undefined),
+    },
+    drafts: {
+      getDrafts: vi.fn(async () => []),
+      getDraftById: vi.fn(async () => undefined),
+      createDraft: vi.fn(async () => draft),
+      updateDraft: vi.fn(async () => draft),
+    },
+    session: {
+      getCurrentUser: vi.fn().mockResolvedValueOnce(null).mockResolvedValue(user),
       login: vi.fn(async () => user),
       logout: vi.fn(async () => undefined),
     },
@@ -106,6 +151,33 @@ function MutationProbe() {
   );
 }
 
+function LoginProbe() {
+  const { ready, currentUser, login } = useAppStore();
+  const [state, setState] = useState('idle');
+
+  if (!ready) {
+    return <div>loading</div>;
+  }
+
+  return (
+    <div>
+      <div>{currentUser?.name ?? 'anonymous'}</div>
+      <button
+        type="button"
+        onClick={async () => {
+          const result = await login({
+            email: 'admin@mediax.local',
+            password: 'mediax2026',
+          });
+          setState(result.ok ? 'accepted' : 'rejected');
+        }}
+      >
+        {state}
+      </button>
+    </div>
+  );
+}
+
 describe('AppProvider mutations', () => {
   it('waits for the refreshed snapshot before resolving a mutation', async () => {
     const user = userEvent.setup();
@@ -128,5 +200,23 @@ describe('AppProvider mutations', () => {
     refreshedDrafts.resolve([draft]);
 
     expect(await screen.findByRole('button', { name: 'resolved' })).toBeInTheDocument();
+  });
+
+  it('does not reject login when optional knowledge refresh fails', async () => {
+    const user = userEvent.setup();
+    const repositories = createLoginRepositories(new Error('请求失败 (404)'));
+
+    render(
+      <AppProvider repositories={repositories}>
+        <LoginProbe />
+      </AppProvider>,
+    );
+
+    await screen.findByRole('button', { name: 'idle' });
+
+    await user.click(screen.getByRole('button', { name: 'idle' }));
+
+    expect(await screen.findByRole('button', { name: 'accepted' })).toBeInTheDocument();
+    expect(await screen.findByText('Mediax Admin')).toBeInTheDocument();
   });
 });

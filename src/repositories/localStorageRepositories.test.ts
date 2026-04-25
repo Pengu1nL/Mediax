@@ -130,4 +130,43 @@ describe('localStorage repositories', () => {
       title: '开放日报名启动',
     });
   });
+
+  it('creates and reads brand knowledge items', async () => {
+    const repositories = createLocalStorageRepositories(window.localStorage);
+
+    const item = await repositories.knowledge.createKnowledgeItem({
+      brandId: 'brand-1',
+      sourceType: 'manual_note',
+      sourceName: '招生文案禁用表达',
+      contentType: 'text',
+      summary: '招生传播不夸大升学结果。',
+      tags: ['招生', '品牌语气'],
+      extractedText: '品牌表达应专业、可信、温暖。避免夸大升学结果。',
+      assetIds: [],
+      confidence: 0.92,
+    });
+
+    await repositories.knowledge.createKnowledgeItem({
+      brandId: 'brand-2',
+      sourceType: 'manual_note',
+      sourceName: '其他品牌知识',
+      contentType: 'text',
+      summary: '不应出现在 brand-1 结果中。',
+      tags: [],
+      assetIds: [],
+      confidence: 0.5,
+    });
+
+    const items = await repositories.knowledge.getKnowledgeItems('brand-1');
+
+    expect(item.status).toBe('ready');
+    expect(item.id).toMatch(/^knowledge-/);
+    expect(item.createdAt).toBeTruthy();
+    expect(item.updatedAt).toBe(item.createdAt);
+    expect(items).toEqual([expect.objectContaining({
+      brandId: 'brand-1',
+      sourceName: '招生文案禁用表达',
+      summary: '招生传播不夸大升学结果。',
+    })]);
+  });
 });
