@@ -3,9 +3,11 @@ import { Camera, Edit3, Globe, Share2, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import BrandMark from '../components/BrandMark';
 import { useAppStore } from '../context/AppContext';
+import { getBrandProfileCompleteness } from '../utils/brandProfile';
 
 export default function Brand() {
   const { brand } = useAppStore();
+  const completeness = getBrandProfileCompleteness(brand);
 
   return (
     <div className="relative pb-20">
@@ -44,6 +46,10 @@ export default function Brand() {
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">品牌理解完整度</p>
+                <p className="text-lg font-black text-ink-black">{completeness}%</p>
+              </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">成立时间</p>
                 <p className="text-lg font-black text-ink-black">{brand.establishedAt || '待补充'}</p>
