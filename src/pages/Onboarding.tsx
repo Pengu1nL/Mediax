@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { InlineAlert } from '../components/PageState';
 import { useAppStore } from '../context/AppContext';
+import type { ReviewPolicy } from '../types';
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -12,6 +13,11 @@ export default function Onboarding() {
   const [industry, setIndustry] = useState('');
   const [keywords, setKeywords] = useState('');
   const [summary, setSummary] = useState('');
+  const [audience, setAudience] = useState('');
+  const [positioning, setPositioning] = useState('');
+  const [toneOfVoice, setToneOfVoice] = useState('');
+  const [doAndDonts, setDoAndDonts] = useState('');
+  const [defaultReviewPolicy, setDefaultReviewPolicy] = useState<ReviewPolicy>('manual_required');
   const [formError, setFormError] = useState('');
 
   useEffect(() => {
@@ -19,6 +25,11 @@ export default function Onboarding() {
     setIndustry(brand.industry);
     setKeywords(brand.keywords.join(', '));
     setSummary(brand.summary);
+    setAudience(brand.audience ?? '');
+    setPositioning(brand.positioning ?? '');
+    setToneOfVoice(brand.toneOfVoice ?? '');
+    setDoAndDonts((brand.doAndDonts ?? []).join(', '));
+    setDefaultReviewPolicy(brand.defaultReviewPolicy ?? 'manual_required');
   }, [brand]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -39,6 +50,15 @@ export default function Onboarding() {
         .split(',')
         .map((item) => item.trim())
         .filter(Boolean),
+      audience: audience.trim(),
+      positioning: positioning.trim(),
+      toneOfVoice: toneOfVoice.trim(),
+      doAndDonts: doAndDonts
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean),
+      defaultReviewPolicy,
+      setupComplete: true,
     });
 
     if (savedProfile) {
@@ -77,8 +97,11 @@ export default function Onboarding() {
 
           <form className="space-y-8" onSubmit={handleSubmit}>
             <div className="space-y-3">
-              <label className="text-xs font-black uppercase tracking-widest text-ink-black ml-4">品牌名称</label>
+              <label htmlFor="brand-name" className="text-xs font-black uppercase tracking-widest text-ink-black ml-4">
+                品牌名称
+              </label>
               <input
+                id="brand-name"
                 type="text"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
@@ -88,9 +111,12 @@ export default function Onboarding() {
             </div>
 
             <div className="space-y-3">
-              <label className="text-xs font-black uppercase tracking-widest text-ink-black ml-4">所属行业</label>
+              <label htmlFor="brand-industry" className="text-xs font-black uppercase tracking-widest text-ink-black ml-4">
+                所属行业
+              </label>
               <div className="relative">
                 <select
+                  id="brand-industry"
                   value={industry}
                   onChange={(event) => setIndustry(event.target.value)}
                   className="w-full bg-zinc-50 border border-zinc-100 rounded-3xl px-8 py-5 text-lg font-bold appearance-none focus:ring-2 focus:ring-signal-orange cursor-pointer"
@@ -109,10 +135,13 @@ export default function Onboarding() {
 
             <div className="space-y-3">
               <div className="flex justify-between items-center px-4">
-                <label className="text-xs font-black uppercase tracking-widest text-ink-black">核心关键词</label>
+                <label htmlFor="brand-keywords" className="text-xs font-black uppercase tracking-widest text-ink-black">
+                  核心关键词
+                </label>
                 <span className="text-[10px] font-bold text-zinc-300 uppercase italic">逗号分隔</span>
               </div>
               <input
+                id="brand-keywords"
                 type="text"
                 value={keywords}
                 onChange={(event) => setKeywords(event.target.value)}
@@ -122,14 +151,97 @@ export default function Onboarding() {
             </div>
 
             <div className="space-y-3">
-              <label className="text-xs font-black uppercase tracking-widest text-ink-black ml-4">品牌简介</label>
+              <label htmlFor="brand-summary" className="text-xs font-black uppercase tracking-widest text-ink-black ml-4">
+                品牌简介
+              </label>
               <textarea
+                id="brand-summary"
                 rows={4}
                 value={summary}
                 onChange={(event) => setSummary(event.target.value)}
                 placeholder="简述品牌愿景、目标受众及核心价值..."
                 className="w-full bg-zinc-50 border border-zinc-100 rounded-3xl px-8 py-5 text-lg font-bold resize-none focus:ring-2 focus:ring-signal-orange transition-all"
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <label htmlFor="brand-audience" className="text-xs font-black uppercase tracking-widest text-ink-black ml-4">
+                  目标受众
+                </label>
+                <input
+                  id="brand-audience"
+                  type="text"
+                  value={audience}
+                  onChange={(event) => setAudience(event.target.value)}
+                  placeholder="例如：学生家庭、校友、合作伙伴"
+                  className="w-full bg-zinc-50 border border-zinc-100 rounded-3xl px-8 py-5 text-lg font-bold focus:ring-2 focus:ring-signal-orange focus:border-transparent transition-all"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label htmlFor="brand-positioning" className="text-xs font-black uppercase tracking-widest text-ink-black ml-4">
+                  品牌定位
+                </label>
+                <input
+                  id="brand-positioning"
+                  type="text"
+                  value={positioning}
+                  onChange={(event) => setPositioning(event.target.value)}
+                  placeholder="例如：临港融合教育品牌"
+                  className="w-full bg-zinc-50 border border-zinc-100 rounded-3xl px-8 py-5 text-lg font-bold focus:ring-2 focus:ring-signal-orange focus:border-transparent transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label htmlFor="brand-tone" className="text-xs font-black uppercase tracking-widest text-ink-black ml-4">
+                品牌语气
+              </label>
+              <input
+                id="brand-tone"
+                type="text"
+                value={toneOfVoice}
+                onChange={(event) => setToneOfVoice(event.target.value)}
+                placeholder="例如：专业、温暖、可信"
+                className="w-full bg-zinc-50 border border-zinc-100 rounded-3xl px-8 py-5 text-lg font-bold focus:ring-2 focus:ring-signal-orange focus:border-transparent transition-all"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-center px-4">
+                <label htmlFor="brand-do-and-donts" className="text-xs font-black uppercase tracking-widest text-ink-black">
+                  禁用表达
+                </label>
+                <span className="text-[10px] font-bold text-zinc-300 uppercase italic">逗号分隔</span>
+              </div>
+              <input
+                id="brand-do-and-donts"
+                type="text"
+                value={doAndDonts}
+                onChange={(event) => setDoAndDonts(event.target.value)}
+                placeholder="例如：不夸大升学结果, 不制造焦虑"
+                className="w-full bg-zinc-50 border border-zinc-100 rounded-3xl px-8 py-5 text-lg font-bold focus:ring-2 focus:ring-signal-orange focus:border-transparent transition-all"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <label htmlFor="brand-review-policy" className="text-xs font-black uppercase tracking-widest text-ink-black ml-4">
+                默认审核策略
+              </label>
+              <div className="relative">
+                <select
+                  id="brand-review-policy"
+                  value={defaultReviewPolicy}
+                  onChange={(event) => setDefaultReviewPolicy(event.target.value as ReviewPolicy)}
+                  className="w-full bg-zinc-50 border border-zinc-100 rounded-3xl px-8 py-5 text-lg font-bold appearance-none focus:ring-2 focus:ring-signal-orange cursor-pointer"
+                >
+                  <option value="manual_required">必须人工审核</option>
+                  <option value="auto_if_low_risk">低风险自动通过</option>
+                  <option value="auto_publish">自动发布</option>
+                </select>
+                <ChevronDown className="absolute right-8 top-1/2 -translate-y-1/2 text-zinc-300 pointer-events-none" size={24} />
+              </div>
             </div>
 
             <div className="pt-6 flex flex-col md:flex-row items-center justify-end gap-6 border-t border-zinc-50">

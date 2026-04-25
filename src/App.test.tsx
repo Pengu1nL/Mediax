@@ -73,6 +73,36 @@ describe('App routing', () => {
     expect(await screen.findByRole('heading', { name: /定义您的品牌/ })).toBeInTheDocument();
   });
 
+  it('saves first-time brand context from onboarding', async () => {
+    const user = userEvent.setup();
+    const repos = createLocalStorageRepositories(window.localStorage);
+
+    render(
+      <MemoryRouter initialEntries={['/onboarding']}>
+        <App repositories={repos} />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole('heading', { name: '进入 Mediax 工作台' })).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('邮箱'), 'admin@mediax.local');
+    await user.type(screen.getByLabelText('密码'), 'mediax2026');
+    await user.click(screen.getByRole('button', { name: '登录并继续' }));
+
+    const brandNameInput = await screen.findByLabelText('品牌名称');
+    await user.click(brandNameInput);
+    await user.keyboard('{Control>}a{/Control}{Backspace}');
+    await user.type(brandNameInput, '建桥融高');
+    expect(brandNameInput).toHaveValue('建桥融高');
+    await user.selectOptions(screen.getByLabelText('所属行业'), '教育 / 民办高中');
+    await user.type(screen.getByLabelText('目标受众'), '关注融合教育的学生家庭');
+    await user.type(screen.getByLabelText('品牌语气'), '专业、温暖、可信');
+    await user.type(screen.getByLabelText('禁用表达'), '不夸大升学结果, 不制造焦虑');
+    await user.click(screen.getByRole('button', { name: /保存并进入品牌页/ }));
+
+    expect(await screen.findByRole('heading', { name: '建桥融高' })).toBeInTheDocument();
+  });
+
   it('renders a non-fixed top navigation after sign in', async () => {
     const user = userEvent.setup();
     const repos = createLocalStorageRepositories(window.localStorage);
