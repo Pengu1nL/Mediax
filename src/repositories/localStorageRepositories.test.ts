@@ -93,7 +93,11 @@ describe('localStorage repositories', () => {
       title: '公众号预热头图发布',
       executionType: 'single',
       schedule: '2026-03-02 10:00',
-      status: 'pending',
+      status: 'draft',
+      brief: '发布公众号预热头图，传达开放日核心信息。',
+      channel: '微信公众号',
+      contentType: '图文',
+      reviewPolicy: 'manual_required',
     } satisfies CreatePlanTaskInput);
 
     const draft = await repositories.drafts.createDraft({
@@ -109,7 +113,7 @@ describe('localStorage repositories', () => {
 
     await repositories.plans.updateTask(plan.id, task.id, {
       linkedDraftId: draft.id,
-      status: 'active',
+      status: 'queued',
     });
 
     const hydratedRepositories = createLocalStorageRepositories(window.localStorage);
@@ -122,7 +126,10 @@ describe('localStorage repositories', () => {
     expect(hydratedTask).toMatchObject({
       title: '公众号预热头图发布',
       linkedDraftId: draft.id,
-      status: 'active',
+      status: 'queued',
+      brief: '发布公众号预热头图，传达开放日核心信息。',
+      channel: '微信公众号',
+      contentType: '图文',
     });
     expect(hydratedDraft).toMatchObject({
       planId: plan.id,

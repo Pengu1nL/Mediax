@@ -12,7 +12,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Modal from '../components/Modal';
 import { EmptyState, InlineAlert, NotFoundState } from '../components/PageState';
 import { useAppStore } from '../context/AppContext';
-import { ExecutionType, PlanTask, PlanTaskStatus } from '../types';
+import { AgentTaskStatus, ExecutionType, PlanTask, ReviewPolicy } from '../types';
 import {
   executionTypeLabel,
   formatDateRange,
@@ -26,7 +26,12 @@ interface TaskFormState {
   subtitle: string;
   executionType: ExecutionType;
   schedule: string;
-  status: PlanTaskStatus;
+  publishSchedule: string;
+  status: AgentTaskStatus;
+  brief: string;
+  channel: string;
+  contentType: string;
+  reviewPolicy: ReviewPolicy;
 }
 
 const defaultTaskForm: TaskFormState = {
@@ -34,7 +39,12 @@ const defaultTaskForm: TaskFormState = {
   subtitle: '',
   executionType: 'single',
   schedule: '',
-  status: 'pending',
+  publishSchedule: '',
+  status: 'draft',
+  brief: '',
+  channel: '',
+  contentType: '',
+  reviewPolicy: 'manual_required',
 };
 
 export default function PlanDetails() {
@@ -45,6 +55,37 @@ export default function PlanDetails() {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [formState, setFormState] = useState<TaskFormState>(defaultTaskForm);
   const [notice, setNotice] = useState('');
+
+  // 循环执行调度
+  const [recurringDays, setRecurringDays] = useState<number[]>([]);
+  const [recurringTime, setRecurringTime] = useState('');
+  const [recurringPublishTime, setRecurringPublishTime] = useState('');
+
+  const WEEKDAY_LABELS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+
+  function buildRecurringSchedule(days: number[], time: string): string {
+    if (days.length === 0 || !time) return '';
+    const dayLabels = days.sort((a, b) => a - b).map((d) => WEEKDAY_LABELS[d]);
+    return `每${dayLabels.join('、')} ${time}`;
+  }
+
+  function parseRecurringSchedule(schedule: string): { days: number[]; time: string } {
+    const match = schedule.match(/每(.+?)\s+(\d{2}:\d{2})/);
+    if (match) {
+      const dayPart = match[1];
+      const time = match[2];
+      const days: number[] = [];
+      WEEKDAY_LABELS.forEach((label, idx) => {
+        if (dayPart.includes(label)) days.push(idx);
+      });
+      return { days, time };
+    }
+    return { days: [], time: '' };
+  }
+
+  function toggleRecurringDay(day: number) {
+    setRecurringDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
+  }
 
   const plan = plans.find((item) => item.id === planId);
   const tasks = useMemo(() => planTasks.filter((task) => task.planId === planId), [planId, planTasks]);
@@ -65,6 +106,9 @@ export default function PlanDetails() {
     setNotice('');
     setEditingTaskId(null);
     setFormState(defaultTaskForm);
+    setRecurringDays([]);
+    setRecurringTime('');
+    setRecurringPublishTime('');
     setDialogOpen(true);
   };
 
@@ -76,8 +120,23 @@ export default function PlanDetails() {
       subtitle: task.subtitle || '',
       executionType: task.executionType,
       schedule: task.schedule,
+      publishSchedule: task.publishSchedule || '',
       status: task.status,
+      brief: task.brief || '',
+      channel: task.channel || '',
+      contentType: task.contentType || '',
+      reviewPolicy: task.reviewPolicy || 'manual_required',
     });
+    if (task.executionType === 'recurring') {
+      const parsed = parseRecurringSchedule(task.schedule);
+      setRecurringDays(parsed.days);
+      setRecurringTime(parsed.time);
+      setRecurringPublishTime(task.publishSchedule || '');
+    } else {
+      setRecurringDays([]);
+      setRecurringTime('');
+      setRecurringPublishTime('');
+    }
     setDialogOpen(true);
   };
 
@@ -89,12 +148,41 @@ export default function PlanDetails() {
       return;
     }
 
+    if (!formState.brief.trim()) {
+      setNotice('任务 brief 不能为空。');
+      return;
+    }
+    if (!formState.channel.trim()) {
+      setNotice('任务渠道不能为空。');
+      return;
+    }
+    if (!formState.contentType.trim()) {
+      setNotice('任务内容类型不能为空。');
+      return;
+    }
+
+    const isSingle = formState.executionType === 'single';
+
+    const schedule = isSingle
+      ? formState.schedule.trim()
+      : buildRecurringSchedule(recurringDays, recurringTime);
+
+    if (!isSingle && !schedule) {
+      setNotice('请至少选择一个执行日并设置执行时间。');
+      return;
+    }
+
     const payload = {
       title: formState.title.trim(),
       subtitle: formState.subtitle.trim() || undefined,
       executionType: formState.executionType,
-      schedule: formState.schedule.trim(),
+      schedule,
+      publishSchedule: isSingle ? undefined : (recurringPublishTime || undefined),
       status: formState.status,
+      brief: formState.brief.trim(),
+      channel: formState.channel.trim(),
+      contentType: formState.contentType.trim(),
+      reviewPolicy: formState.reviewPolicy,
     };
 
     const task = editingTaskId
@@ -104,6 +192,29 @@ export default function PlanDetails() {
     if (task) {
       setDialogOpen(false);
       setFormState(defaultTaskForm);
+
+      // 单次执行：保存后立即创建草稿并跳转到草稿编辑页
+      if (!editingTaskId && isSingle) {
+        const draft = await createDraft({
+          planId: plan.id,
+          taskId: task.id,
+          platform: formState.channel.trim(),
+          group: plan.category || '未分组',
+          status: 'draft',
+          title: task.title,
+          excerpt: task.brief || task.subtitle || task.title,
+          content: `${task.title}\n\n---\n\n${task.brief || ''}`,
+        });
+
+        if (draft) {
+          await updateTask(plan.id, task.id, {
+            linkedDraftId: draft.id,
+            linkedDraftIds: [draft.id],
+            status: 'queued',
+          });
+          navigate(`/drafts/${draft.id}`);
+        }
+      }
     }
   };
 
@@ -127,7 +238,7 @@ export default function PlanDetails() {
     if (draft) {
       await updateTask(plan.id, task.id, {
         linkedDraftId: draft.id,
-        status: task.status === 'pending' ? 'active' : task.status,
+        status: task.status === 'draft' ? 'queued' : task.status,
       });
       navigate(`/drafts/${draft.id}`);
     }
@@ -177,9 +288,9 @@ export default function PlanDetails() {
         <SummaryCard title="任务数量" value={`${tasks.length}`} subtitle="挂在当前计划下的执行项" />
         <SummaryCard title="关联草稿" value={`${linkedDrafts.length}`} subtitle="已经挂到 Drafts 的内容" />
         <SummaryCard
-          title="执行中"
-          value={`${tasks.filter((task) => task.status === 'active').length}`}
-          subtitle="会在列表与详情页同步更新"
+          title="Agent 就绪"
+          value={`${tasks.filter((t) => t.brief?.trim() && t.channel?.trim() && t.contentType?.trim() && t.reviewPolicy).length}`}
+          subtitle="brief、渠道、内容类型和审核策略均已配置"
         />
       </section>
 
@@ -213,6 +324,7 @@ export default function PlanDetails() {
                   <TaskRow
                     key={task.id}
                     task={task}
+                    planId={plan.id}
                     onEdit={() => openEditDialog(task)}
                     onDelete={() => handleDeleteTask(task)}
                     onOpenDraft={() => handleDraftAction(task)}
@@ -231,10 +343,12 @@ export default function PlanDetails() {
         onClose={() => setDialogOpen(false)}
       >
         {notice ? <InlineAlert message={notice} onDismiss={() => setNotice('')} /> : null}
-        <form className="space-y-5" onSubmit={handleSubmit}>
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          {/* 任务名称 */}
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-ink-black">任务名称</label>
+            <label htmlFor="task-title" className="text-xs font-black uppercase tracking-widest text-ink-black">任务名称</label>
             <input
+              id="task-title"
               type="text"
               value={formState.title}
               onChange={(event) => setFormState((current) => ({ ...current, title: event.target.value }))}
@@ -243,9 +357,153 @@ export default function PlanDetails() {
             />
           </div>
 
+          {/* 任务 Brief */}
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-ink-black">补充说明</label>
+            <label htmlFor="task-brief" className="text-xs font-black uppercase tracking-widest text-ink-black">
+              任务 Brief <span className="text-signal-orange">*</span>
+            </label>
+            <textarea
+              id="task-brief"
+              value={formState.brief}
+              onChange={(event) => setFormState((current) => ({ ...current, brief: event.target.value }))}
+              className="w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-5 py-4 font-bold resize-none"
+              rows={3}
+              placeholder="描述任务目标、受众和核心信息点，Agent 将以此为依据执行内容生成。"
+            />
+          </div>
+
+          {/* 发布渠道 + 内容类型 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <label htmlFor="task-channel" className="text-xs font-black uppercase tracking-widest text-ink-black">
+                发布渠道 <span className="text-signal-orange">*</span>
+              </label>
+              <select
+                id="task-channel"
+                value={formState.channel}
+                onChange={(event) => setFormState((current) => ({ ...current, channel: event.target.value }))}
+                className="w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-5 py-4 font-bold"
+              >
+                <option value="">选择渠道</option>
+                <option value="微信公众号">微信公众号</option>
+                <option value="小红书">小红书</option>
+                <option value="抖音">抖音</option>
+                <option value="视频号">视频号</option>
+                <option value="官方博客">官方博客</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="task-content-type" className="text-xs font-black uppercase tracking-widest text-ink-black">
+                内容类型 <span className="text-signal-orange">*</span>
+              </label>
+              <select
+                id="task-content-type"
+                value={formState.contentType}
+                onChange={(event) => setFormState((current) => ({ ...current, contentType: event.target.value }))}
+                className="w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-5 py-4 font-bold"
+              >
+                <option value="">选择内容类型</option>
+                <option value="图文">图文</option>
+                <option value="短视频">短视频</option>
+                <option value="直播">直播</option>
+                <option value="长文章">长文章</option>
+                <option value="海报">海报</option>
+              </select>
+            </div>
+          </div>
+
+          {/* 调度区 */}
+          <div className="rounded-3xl border border-zinc-200 bg-zinc-50/50 p-6 space-y-5">
+            <div className="flex items-center gap-3">
+              <span className="w-8 h-8 rounded-full bg-ink-black text-white flex items-center justify-center text-xs font-black">1</span>
+              <label htmlFor="task-execution-type" className="text-sm font-black uppercase tracking-widest text-ink-black">执行类型</label>
+              <select
+                id="task-execution-type"
+                value={formState.executionType}
+                onChange={(event) =>
+                  setFormState((current) => ({ ...current, executionType: event.target.value as ExecutionType }))
+                }
+                className="flex-1 rounded-2xl border border-zinc-200 bg-white px-5 py-3 font-bold text-sm"
+              >
+                <option value="single">单次执行 · 保存后立即生成草稿</option>
+                <option value="recurring">循环执行 · 按周期自动产出</option>
+              </select>
+            </div>
+
+            {formState.executionType === 'single' ? (
+              <div className="flex items-center gap-3 pl-11">
+                <span className="w-8 h-8 rounded-full bg-zinc-200 text-ink-black flex items-center justify-center text-xs font-black">2</span>
+                <label htmlFor="task-schedule" className="text-sm font-black uppercase tracking-widest text-ink-black whitespace-nowrap">计划发布时间</label>
+                <input
+                  id="task-schedule"
+                  type="datetime-local"
+                  value={formState.schedule}
+                  onChange={(event) => setFormState((current) => ({ ...current, schedule: event.target.value }))}
+                  className="flex-1 rounded-2xl border border-zinc-200 bg-white px-5 py-3 font-bold text-sm"
+                />
+              </div>
+            ) : (
+              <>
+                <div className="pl-11 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-zinc-200 text-ink-black flex items-center justify-center text-xs font-black">2</span>
+                    <span className="text-sm font-black uppercase tracking-widest text-ink-black">执行周期</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 ml-11">
+                    {WEEKDAY_LABELS.map((label, idx) => (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => toggleRecurringDay(idx)}
+                        className={`min-w-[3.5rem] px-4 py-2.5 rounded-full text-sm font-bold border transition-all ${
+                          recurringDays.includes(idx)
+                            ? 'bg-ink-black text-white border-ink-black'
+                            : 'bg-white text-zinc-400 border-zinc-200 hover:border-zinc-400 hover:text-zinc-600'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pl-11">
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-zinc-200 text-ink-black flex items-center justify-center text-xs font-black">3</span>
+                    <div className="flex-1 space-y-1">
+                      <label htmlFor="recurring-time" className="text-xs font-black uppercase tracking-widest text-zinc-400">执行时间</label>
+                      <input
+                        id="recurring-time"
+                        type="time"
+                        value={recurringTime}
+                        onChange={(event) => setRecurringTime(event.target.value)}
+                        className="w-full rounded-2xl border border-zinc-200 bg-white px-5 py-3 font-bold text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-zinc-200 text-ink-black flex items-center justify-center text-xs font-black">4</span>
+                    <div className="flex-1 space-y-1">
+                      <label htmlFor="task-publish-schedule" className="text-xs font-black uppercase tracking-widest text-zinc-400">计划发布时间</label>
+                      <input
+                        id="task-publish-schedule"
+                        type="time"
+                        value={recurringPublishTime}
+                        onChange={(event) => setRecurringPublishTime(event.target.value)}
+                        className="w-full rounded-2xl border border-zinc-200 bg-white px-5 py-3 font-bold text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* 补充说明 */}
+          <div className="space-y-2">
+            <label htmlFor="task-subtitle" className="text-xs font-black uppercase tracking-widest text-ink-black">补充说明</label>
             <input
+              id="task-subtitle"
               type="text"
               value={formState.subtitle}
               onChange={(event) => setFormState((current) => ({ ...current, subtitle: event.target.value }))}
@@ -254,45 +512,41 @@ export default function PlanDetails() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* 状态 + 审核策略 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-ink-black">执行类型</label>
+              <label htmlFor="task-status" className="text-xs font-black uppercase tracking-widest text-ink-black">状态</label>
               <select
-                value={formState.executionType}
+                id="task-status"
+                value={formState.status}
                 onChange={(event) =>
-                  setFormState((current) => ({ ...current, executionType: event.target.value as ExecutionType }))
+                  setFormState((current) => ({ ...current, status: event.target.value as AgentTaskStatus }))
                 }
                 className="w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-5 py-4 font-bold"
               >
-                <option value="single">单次执行</option>
-                <option value="recurring">循环执行</option>
+                <option value="draft">草稿</option>
+                <option value="queued">排队中</option>
+                <option value="ready_for_review">待审核</option>
+                <option value="approved">已批准</option>
+                <option value="published">已发布</option>
+                <option value="cancelled">已取消</option>
               </select>
             </div>
-            <div className="space-y-2 md:col-span-2">
-              <label className="text-xs font-black uppercase tracking-widest text-ink-black">时间安排</label>
-              <input
-                type="text"
-                value={formState.schedule}
-                onChange={(event) => setFormState((current) => ({ ...current, schedule: event.target.value }))}
+            <div className="space-y-2">
+              <label htmlFor="task-review-policy" className="text-xs font-black uppercase tracking-widest text-ink-black">审核策略</label>
+              <select
+                id="task-review-policy"
+                value={formState.reviewPolicy}
+                onChange={(event) =>
+                  setFormState((current) => ({ ...current, reviewPolicy: event.target.value as ReviewPolicy }))
+                }
                 className="w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-5 py-4 font-bold"
-                placeholder="例如：2026-03-02 10:00"
-              />
+              >
+                <option value="manual_required">必须人工审核</option>
+                <option value="auto_if_low_risk">低风险自动发布</option>
+                <option value="auto_publish">自动发布</option>
+              </select>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-ink-black">状态</label>
-            <select
-              value={formState.status}
-              onChange={(event) =>
-                setFormState((current) => ({ ...current, status: event.target.value as PlanTaskStatus }))
-              }
-              className="w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-5 py-4 font-bold"
-            >
-              <option value="pending">待执行</option>
-              <option value="active">执行中</option>
-              <option value="completed">已完成</option>
-            </select>
           </div>
 
           <div className="pt-4 flex justify-end gap-4">
@@ -325,16 +579,20 @@ function SummaryCard({ title, value, subtitle }: { title: string; value: string;
 
 function TaskRow({
   task,
+  planId,
   onEdit,
   onDelete,
   onOpenDraft,
 }: {
   key?: React.Key;
   task: PlanTask;
+  planId: string;
   onEdit: () => void;
   onDelete: () => void;
   onOpenDraft: () => void;
 }) {
+  const navigate = useNavigate();
+
   return (
     <tr className="hover:bg-zinc-50/80 transition-colors group">
       <td className="py-8 px-10">
@@ -343,7 +601,13 @@ function TaskRow({
             {task.executionType === 'single' ? <PlayCircle size={20} /> : <Repeat size={20} />}
           </div>
           <div>
-            <div className="font-black text-ink-black text-base">{task.title}</div>
+            <button
+              type="button"
+              onClick={() => navigate(`/plans/${planId}/tasks/${task.id}`)}
+              className="font-black text-ink-black text-base text-left hover:text-signal-orange transition-colors"
+            >
+              {task.title}
+            </button>
             <div className="text-sm font-medium text-slate-gray mt-1">{task.subtitle || '暂无补充说明'}</div>
           </div>
         </div>

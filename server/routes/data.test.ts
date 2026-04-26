@@ -58,7 +58,7 @@ function seedApiData(data: AppData) {
 async function invokeRoute(
   method: 'get' | 'post',
   path: string,
-  input: { body?: unknown; query?: Record<string, unknown> } = {},
+  input: { body?: unknown; query?: Record<string, unknown>; params?: Record<string, string> } = {},
 ) {
   const router = createDataRouter();
   const layer = router.stack.find((item) => {
@@ -75,6 +75,7 @@ async function invokeRoute(
   const req = {
     body: input.body,
     query: input.query ?? {},
+    params: input.params ?? {},
   } as Request;
   const res = {
     status(code: number) {
@@ -106,6 +107,90 @@ describe('data API routes', () => {
     });
 
     expect(hasDraftDetailRoute).toBe(true);
+  });
+
+  it('rejects task creation when brief, channel or contentType is missing', async () => {
+    storeMocks.loadData.mockResolvedValue({
+      ...dataWithDraft(),
+      plans: [{ id: 'plan-1', title: '测试计划', status: 'active', startDate: '2026-04-01', endDate: '2026-04-30' }],
+    });
+
+    storeMocks.updateData.mockImplementation(async (fn: (data: AppData) => { data: AppData; result: unknown }) => {
+      const data = {
+        ...dataWithDraft(),
+        plans: [{ id: 'plan-1', title: '测试计划', status: 'active', startDate: '2026-04-01', endDate: '2026-04-30' }],
+      };
+      const cloned = JSON.parse(JSON.stringify(data)) as AppData;
+      return fn(cloned).result;
+    });
+
+    const taskParams = { params: { planId: 'plan-1' } };
+
+    // Missing brief
+    const noBrief = await invokeRoute('post', '/plans/:planId/tasks', {
+      ...taskParams,
+      body: {
+        title: '测试任务',
+        executionType: 'single',
+        schedule: '2026-04-01 10:00',
+        status: 'draft',
+        channel: '微信公众号',
+        contentType: '图文',
+        // brief missing
+      },
+    });
+    expect(noBrief.statusCode).toBe(400);
+
+    // Missing channel
+    const noChannel = await invokeRoute('post', '/plans/:planId/tasks', {
+      ...taskParams,
+      body: {
+        title: '测试任务',
+        executionType: 'single',
+        schedule: '2026-04-01 10:00',
+        status: 'draft',
+        brief: '测试brief',
+        contentType: '图文',
+        // channel missing
+      },
+    });
+    expect(noChannel.statusCode).toBe(400);
+
+    // Missing contentType
+    const noContentType = await invokeRoute('post', '/plans/:planId/tasks', {
+      ...taskParams,
+      body: {
+        title: '测试任务',
+        executionType: 'single',
+        schedule: '2026-04-01 10:00',
+        status: 'draft',
+        brief: '测试brief',
+        channel: '微信公众号',
+        // contentType missing
+      },
+    });
+    expect(noContentType.statusCode).toBe(400);
+
+    // All fields present - should succeed
+    const valid = await invokeRoute('post', '/plans/:planId/tasks', {
+      ...taskParams,
+      body: {
+        title: '测试任务',
+        executionType: 'single',
+        schedule: '2026-04-01 10:00',
+        status: 'draft',
+        brief: '测试brief',
+        channel: '微信公众号',
+        contentType: '图文',
+      },
+    });
+    expect(valid.statusCode).toBe(201);
+    expect(valid.body).toMatchObject({
+      title: '测试任务',
+      brief: '测试brief',
+      channel: '微信公众号',
+      contentType: '图文',
+    });
   });
 
   it('creates and returns brand knowledge items', async () => {

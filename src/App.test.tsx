@@ -182,6 +182,31 @@ describe('App routing', () => {
     expect(screen.getByText('请使用 Chrome 或 Edge 打开 Mediax，再绑定本地素材文件夹。')).toBeInTheDocument();
   });
 
+  it('creates an agent-ready task and shows brief, channel, contentType and reviewPolicy on task detail page', async () => {
+    signInSession();
+    const user = userEvent.setup();
+    const repos = createLocalStorageRepositories(window.localStorage);
+    await completeBrandSetup(repos);
+
+    render(
+      <MemoryRouter initialEntries={['/plans/p1']}>
+        <App repositories={repos} />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('主视觉海报发布 - 微信公众号')).toBeInTheDocument();
+
+    // Open task detail by clicking task title
+    await user.click(screen.getByText('主视觉海报发布 - 微信公众号'));
+
+    // Assert the TaskDetails page shows agent-ready fields
+    expect(await screen.findByRole('heading', { name: '任务 Brief' })).toBeInTheDocument();
+    expect(screen.getByText('发布秋季招生主视觉海报，突出融合教育理念和临港校区环境，配合招生简章下载入口。')).toBeInTheDocument();
+    expect(screen.getByText('微信公众号')).toBeInTheDocument();
+    expect(screen.getByText('图文')).toBeInTheDocument();
+    expect(screen.getByText('必须人工审核')).toBeInTheDocument();
+  });
+
   it('shows the brand knowledge count on the brand page', async () => {
     signInSession();
     const repos = createLocalStorageRepositories(window.localStorage);

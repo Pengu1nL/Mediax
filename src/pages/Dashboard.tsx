@@ -11,12 +11,13 @@ export default function Dashboard() {
   const { brand, plans, planTasks, drafts } = useAppStore();
 
   const activePlans = plans.filter((plan) => plan.status === 'active').length;
-  const activeTasks = planTasks.filter((task) => task.status === 'active').length;
+  const inProgressStatuses: string[] = ['queued', 'researching', 'planning', 'creating'];
+  const activeTasks = planTasks.filter((task) => inProgressStatuses.includes(task.status)).length;
   const readyDrafts = drafts.filter((draft) => draft.status === 'ready').length;
   const liveChannels = brand.channels.filter((channel) => channel.active).length;
   const recentPlans = plans.slice(0, 4);
   const industryNews = getIndustryNews(brand.industry);
-  const nextActiveTask = planTasks.find((task) => task.status === 'active') ?? planTasks[0];
+  const nextActiveTask = planTasks.find((task) => inProgressStatuses.includes(task.status)) ?? planTasks[0];
 
   return (
     <div className="space-y-8 pb-20">

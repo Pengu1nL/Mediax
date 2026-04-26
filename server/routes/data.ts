@@ -12,7 +12,9 @@ import {
   Plan,
   PlanStatus,
   PlanTask,
-  PlanTaskStatus,
+  AgentTaskStatus,
+  AutomationLevel,
+  ReviewPolicy,
 } from '../../src/types';
 
 function createId(prefix: string): string {
@@ -143,6 +145,13 @@ export function createDataRouter(): Router {
         status: PlanStatus;
         startDate: string;
         endDate: string;
+        brandId?: string;
+        objective?: string;
+        audience?: string;
+        channels?: string[];
+        successMetrics?: string[];
+        automationLevel?: AutomationLevel;
+        reviewPolicy?: ReviewPolicy;
       };
       if (!input.title || !input.status || !input.startDate || !input.endDate) {
         res.status(400).json({ error: '计划信息不完整。' });
@@ -156,6 +165,13 @@ export function createDataRouter(): Router {
           status: input.status,
           startDate: input.startDate,
           endDate: input.endDate,
+          brandId: input.brandId,
+          objective: input.objective,
+          audience: input.audience,
+          channels: input.channels,
+          successMetrics: input.successMetrics,
+          automationLevel: input.automationLevel,
+          reviewPolicy: input.reviewPolicy,
         };
         data.plans.unshift(plan);
         return { data, result: plan };
@@ -175,6 +191,13 @@ export function createDataRouter(): Router {
         status: PlanStatus;
         startDate: string;
         endDate: string;
+        brandId?: string;
+        objective?: string;
+        audience?: string;
+        channels?: string[];
+        successMetrics?: string[];
+        automationLevel?: AutomationLevel;
+        reviewPolicy?: ReviewPolicy;
       }>;
       const plan = await updateData((data) => {
         const plan = data.plans.find((p) => p.id === planId);
@@ -231,11 +254,35 @@ export function createDataRouter(): Router {
         subtitle?: string;
         executionType: ExecutionType;
         schedule: string;
-        status: PlanTaskStatus;
+        status: AgentTaskStatus;
         linkedDraftId?: string;
+        brandId?: string;
+        brief?: string;
+        channel?: string;
+        contentType?: string;
+        requirements?: string[];
+        researchInstructions?: string;
+        assetScope?: string[];
+        reviewPolicy?: ReviewPolicy;
+        publishPolicy?: ReviewPolicy;
+        linkedDraftIds?: string[];
+        agentRunId?: string;
+        publishSchedule?: string;
       };
       if (!input.title || !input.executionType || !input.schedule || !input.status) {
         res.status(400).json({ error: '任务信息不完整。' });
+        return;
+      }
+      if (!input.brief?.trim()) {
+        res.status(400).json({ error: '任务 brief 不能为空。' });
+        return;
+      }
+      if (!input.channel?.trim()) {
+        res.status(400).json({ error: '任务渠道不能为空。' });
+        return;
+      }
+      if (!input.contentType?.trim()) {
+        res.status(400).json({ error: '任务内容类型不能为空。' });
         return;
       }
       const task = await updateData((data) => {
@@ -250,6 +297,18 @@ export function createDataRouter(): Router {
           schedule: input.schedule,
           status: input.status,
           linkedDraftId: input.linkedDraftId,
+          brandId: input.brandId,
+          brief: input.brief,
+          channel: input.channel,
+          contentType: input.contentType,
+          requirements: input.requirements,
+          researchInstructions: input.researchInstructions,
+          assetScope: input.assetScope,
+          reviewPolicy: input.reviewPolicy,
+          publishPolicy: input.publishPolicy,
+          linkedDraftIds: input.linkedDraftIds,
+          agentRunId: input.agentRunId,
+          publishSchedule: input.publishSchedule,
         };
         data.planTasks.push(task);
         return { data, result: task };
@@ -268,8 +327,20 @@ export function createDataRouter(): Router {
         subtitle?: string;
         executionType: ExecutionType;
         schedule: string;
-        status: PlanTaskStatus;
+        status: AgentTaskStatus;
         linkedDraftId?: string;
+        brandId?: string;
+        brief?: string;
+        channel?: string;
+        contentType?: string;
+        requirements?: string[];
+        researchInstructions?: string;
+        assetScope?: string[];
+        reviewPolicy?: ReviewPolicy;
+        publishPolicy?: ReviewPolicy;
+        linkedDraftIds?: string[];
+        agentRunId?: string;
+        publishSchedule?: string;
       }>;
       const task = await updateData((data) => {
         const task = data.planTasks.find((t) => t.id === taskId && t.planId === planId);

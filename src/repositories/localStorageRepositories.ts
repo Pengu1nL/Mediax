@@ -13,8 +13,10 @@ import {
   Plan,
   PlanStatus,
   PlanTask,
-  PlanTaskStatus,
+  AgentTaskStatus,
   SessionUser,
+  AutomationLevel,
+  ReviewPolicy,
 } from '../types';
 
 export interface StorageLike {
@@ -29,6 +31,13 @@ export interface CreatePlanInput {
   status: PlanStatus;
   startDate: string;
   endDate: string;
+  brandId?: string;
+  objective?: string;
+  audience?: string;
+  channels?: string[];
+  successMetrics?: string[];
+  automationLevel?: AutomationLevel;
+  reviewPolicy?: ReviewPolicy;
 }
 
 export interface UpdatePlanInput extends Partial<CreatePlanInput> {}
@@ -38,8 +47,20 @@ export interface CreatePlanTaskInput {
   subtitle?: string;
   executionType: ExecutionType;
   schedule: string;
-  status: PlanTaskStatus;
+  status: AgentTaskStatus;
   linkedDraftId?: string;
+  brandId?: string;
+  brief?: string;
+  channel?: string;
+  contentType?: string;
+  requirements?: string[];
+  researchInstructions?: string;
+  assetScope?: string[];
+  reviewPolicy?: ReviewPolicy;
+  publishPolicy?: ReviewPolicy;
+  linkedDraftIds?: string[];
+  agentRunId?: string;
+  publishSchedule?: string;
 }
 
 export interface UpdatePlanTaskInput extends Partial<CreatePlanTaskInput> {}
@@ -267,6 +288,13 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
             status: input.status,
             startDate: input.startDate,
             endDate: input.endDate,
+            brandId: input.brandId,
+            objective: input.objective,
+            audience: input.audience,
+            channels: input.channels,
+            successMetrics: input.successMetrics,
+            automationLevel: input.automationLevel,
+            reviewPolicy: input.reviewPolicy,
           };
           current.plans.unshift(plan);
           return { next: current, result: plan };
@@ -309,6 +337,16 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
             throw new Error('无法为不存在的计划创建任务。');
           }
 
+          if (!input.brief?.trim()) {
+            throw new Error('任务 brief 不能为空。');
+          }
+          if (!input.channel?.trim()) {
+            throw new Error('任务渠道不能为空。');
+          }
+          if (!input.contentType?.trim()) {
+            throw new Error('任务内容类型不能为空。');
+          }
+
           const task: PlanTask = {
             id: createId('task'),
             planId,
@@ -318,6 +356,18 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
             schedule: input.schedule,
             status: input.status,
             linkedDraftId: input.linkedDraftId,
+            brandId: input.brandId,
+            brief: input.brief,
+            channel: input.channel,
+            contentType: input.contentType,
+            requirements: input.requirements,
+            researchInstructions: input.researchInstructions,
+            assetScope: input.assetScope,
+            reviewPolicy: input.reviewPolicy,
+            publishPolicy: input.publishPolicy,
+            linkedDraftIds: input.linkedDraftIds,
+            agentRunId: input.agentRunId,
+            publishSchedule: input.publishSchedule,
           };
 
           current.planTasks.push(task);
