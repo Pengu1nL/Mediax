@@ -69,6 +69,8 @@ interface AppContextValue extends AppSnapshot {
   rejectDraft: (draftId: string, note: string) => Promise<Draft | undefined>;
   requestRegeneration: (draftId: string, note: string) => Promise<Draft | undefined>;
   deleteDraft: (draftId: string) => Promise<void>;
+  publishDraft: (draftId: string) => Promise<Draft | undefined>;
+  exportDraft: (draftId: string) => Promise<unknown>;
 }
 
 const seed = createSeedAppData();
@@ -194,6 +196,8 @@ export function AppProvider({
       rejectDraft: (draftId, note) => runMutation(() => dataRepos.drafts.rejectDraft(draftId, note)),
       requestRegeneration: (draftId, note) => runMutation(() => dataRepos.drafts.requestRegeneration(draftId, note)),
       deleteDraft: (draftId) => runMutation(() => dataRepos.drafts.deleteDraft(draftId)).then(() => undefined),
+      publishDraft: (draftId) => runMutation(() => dataRepos.drafts.publishDraft(draftId)),
+      exportDraft: (draftId) => runMutation(() => dataRepos.drafts.exportDraft(draftId)),
     }),
     [error, ready, refresh, dataRepos, session, runMutation, snapshot],
   );

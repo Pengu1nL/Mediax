@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Calendar, CheckCircle2, FileText, RotateCcw, Save, ThumbsDown, ThumbsUp, Trash2, XCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle2, Download, FileText, RotateCcw, Save, Send, ThumbsDown, ThumbsUp, Trash2, XCircle } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { InlineAlert, NotFoundState } from '../components/PageState';
 import { useAppStore } from '../context/AppContext';
@@ -17,7 +17,7 @@ const REVIEW_STATUS_LABEL: Record<string, string> = {
 export default function DraftEditor() {
   const navigate = useNavigate();
   const { draftId } = useParams();
-  const { drafts, plans, planTasks, agentRuns, updateDraft, approveDraft, rejectDraft, requestRegeneration, deleteDraft } = useAppStore();
+  const { drafts, plans, planTasks, agentRuns, updateDraft, approveDraft, rejectDraft, requestRegeneration, deleteDraft, publishDraft, exportDraft } = useAppStore();
   const [title, setTitle] = useState('');
   const [platform, setPlatform] = useState('');
   const [group, setGroup] = useState('');
@@ -112,6 +112,35 @@ export default function DraftEditor() {
     if (result) {
       setNotice('已要求重新生成，任务回到排队状态。');
       if (task) navigate(`/plans/${task.planId}/tasks/${task.id}`);
+    }
+  };
+
+  const handlePublish = async () => {
+    setSaving(true);
+    try {
+      const result = await publishDraft(draft.id);
+      if (result) setNotice('发布成功！任务已标记为已发布。');
+    } catch {
+      setNotice('发布失败，请确认草稿已被批准。');
+    }
+    setSaving(false);
+  };
+
+  const handleExport = async () => {
+    setSaving(true);
+    const result = await exportDraft(draft.id);
+    setSaving(false);
+    if (result) {
+      const pkg = result as Record<string, unknown>;
+      const record = pkg.record as Record<string, unknown> | undefined;
+      const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `draft-${draft.id}-export.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setNotice(`已导出发布包${record?.id ? `（发布记录 ${record.id}）` : ''}，同时已下载 JSON 文件。`);
     }
   };
 
@@ -366,6 +395,34 @@ export default function DraftEditor() {
                   重新生成
                 </button>
               </div>
+            </div>
+
+            {/* Publish & Export */}
+            <div className="mt-6 pt-5 border-t border-zinc-200">
+              <div className="text-[10px] font-black uppercase tracking-[0.35em] text-zinc-400 mb-4">发布与导出</div>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={handlePublish}
+                  disabled={saving}
+                  className="w-full flex items-center justify-center gap-2 bg-signal-orange text-white px-6 py-3.5 rounded-2xl font-bold hover:bg-light-orange transition-colors disabled:opacity-50"
+                >
+                  <Send size={18} />
+                  {draft.publishState === 'published' ? '已发布' : '发布'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExport}
+                  disabled={saving}
+                  className="w-full flex items-center justify-center gap-2 bg-white text-ink-black border-2 border-zinc-200 px-6 py-3.5 rounded-2xl font-bold hover:border-signal-orange hover:text-signal-orange transition-colors disabled:opacity-50"
+                >
+                  <Download size={18} />
+                  导出发布包
+                </button>
+              </div>
+              {draft.publishState === 'published' ? (
+                <p className="text-xs font-medium text-emerald-600 mt-3">此草稿已发布。</p>
+              ) : null}
             </div>
           </div>
         </div>

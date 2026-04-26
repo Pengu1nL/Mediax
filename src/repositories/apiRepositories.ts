@@ -63,6 +63,8 @@ export interface ApiDraftRepository {
   rejectDraft(draftId: string, note: string): Promise<Draft>;
   requestRegeneration(draftId: string, note: string): Promise<Draft>;
   deleteDraft(draftId: string): Promise<void>;
+  publishDraft(draftId: string): Promise<Draft>;
+  exportDraft(draftId: string): Promise<unknown>;
 }
 
 export interface ApiAgentRunRepository {
@@ -197,6 +199,12 @@ export function createApiDataRepositories(): ApiDataRepositories {
       },
       async deleteDraft(draftId) {
         await apiClient.delete(`/drafts/${draftId}`);
+      },
+      async publishDraft(draftId) {
+        return apiClient.post<Draft>(`/drafts/${draftId}/publish`);
+      },
+      async exportDraft(draftId) {
+        return apiClient.post(`/drafts/${draftId}/export`);
       },
     },
     agentRuns: {

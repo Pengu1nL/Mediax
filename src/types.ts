@@ -209,6 +209,22 @@ export interface AgentRun {
   completedAt?: string;
 }
 
+export type PublishStatus = 'pending' | 'published' | 'failed' | 'exported';
+
+export interface PublishRecord {
+  id: string;
+  draftId: string;
+  taskId?: string;
+  planId?: string;
+  platform: string;
+  status: PublishStatus;
+  title: string;
+  content: string;
+  excerpt: string;
+  publishedAt: string;
+  error?: string;
+}
+
 export interface AppData {
   brand: BrandProfile;
   assets: Asset[];
@@ -217,4 +233,5 @@ export interface AppData {
   planTasks: PlanTask[];
   drafts: Draft[];
   agentRuns: AgentRun[];
+  publishRecords: PublishRecord[];
 }

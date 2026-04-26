@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { requireAuth } from '../auth';
 import { loadData, updateData } from '../store';
 import { runAgentTask } from '../agent/runAgentTask';
+import { simulatePublish, exportDraft } from '../publishers/simulatedPublisher';
 import {
   BrandProfile,
   BrandKnowledgeItem,
@@ -595,6 +596,95 @@ export function createDataRouter(): Router {
     } catch (err: any) {
       const status = err.message.includes('未找到') ? 404 : 500;
       res.status(status).json({ error: err.message });
+    }
+  });
+
+  // ---- Publish ----
+
+  router.post('/drafts/:draftId/publish', async (req: Request, res: Response) => {
+    try {
+      const { draftId } = req.params;
+      const now = new Date().toISOString();
+
+      const result = await updateData((data) => {
+        const draft = data.drafts.find((d) => d.id === draftId);
+        if (!draft) throw new Error('未找到对应的草稿。');
+
+        if (draft.status !== 'ready') {
+          throw new Error('只有已批准的草稿才能发布。');
+        }
+
+        const plan = draft.planId ? data.plans.find((p) => p.id === draft.planId) : null;
+        const task = draft.taskId ? data.planTasks.find((t) => t.id === draft.taskId) : null;
+
+        const { record, taskStatus } = simulatePublish({
+          draft,
+          taskReviewPolicy: task?.reviewPolicy ?? task?.publishPolicy,
+          planReviewPolicy: plan?.reviewPolicy,
+          brandReviewPolicy: data.brand.defaultReviewPolicy,
+        });
+
+        // 更新草稿状态
+        draft.status = 'ready';
+        draft.publishState = 'published';
+        draft.updatedAt = now;
+
+        // 更新任务状态
+        if (task) {
+          task.status = taskStatus as typeof task.status;
+        }
+
+        data.publishRecords.push(record);
+
+        return { data, result: { record, draft } };
+      });
+
+      res.status(200).json(result);
+    } catch (err: any) {
+      const status = err.message.includes('未找到') ? 404 : err.message.includes('批准') ? 400 : 500;
+      res.status(status).json({ error: err.message });
+    }
+  });
+
+  router.post('/drafts/:draftId/export', async (req: Request, res: Response) => {
+    try {
+      const { draftId } = req.params;
+      const data = await loadData();
+      const draft = data.drafts.find((d) => d.id === draftId);
+      if (!draft) {
+        res.status(404).json({ error: '未找到对应的草稿。' });
+        return;
+      }
+
+      const plan = draft.planId ? data.plans.find((p) => p.id === draft.planId) : null;
+      const task = draft.taskId ? data.planTasks.find((t) => t.id === draft.taskId) : null;
+
+      const pkg = exportDraft({
+        draft,
+        taskReviewPolicy: task?.reviewPolicy ?? task?.publishPolicy,
+        planReviewPolicy: plan?.reviewPolicy,
+        brandReviewPolicy: data.brand.defaultReviewPolicy,
+      });
+
+      // 创建导出发布记录
+      const now = new Date().toISOString();
+      const record = {
+        id: `pub-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+        draftId: draft.id,
+        taskId: draft.taskId,
+        planId: draft.planId,
+        platform: draft.platform,
+        status: 'exported' as const,
+        title: draft.title,
+        content: draft.content,
+        excerpt: draft.excerpt,
+        publishedAt: now,
+      };
+      data.publishRecords.push(record);
+
+      res.json({ ...pkg, record });
+    } catch {
+      res.status(500).json({ error: '导出失败。' });
     }
   });
 

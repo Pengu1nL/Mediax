@@ -42,6 +42,7 @@ function dataWithDraft(): AppData {
       },
     ],
     agentRuns: [],
+    publishRecords: [],
   };
 }
 

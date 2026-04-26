@@ -4,6 +4,7 @@ import {
   Asset,
   AgentRun,
   AgentRunStep,
+  PublishRecord,
   BrandKnowledgeItem,
   BrandProfile,
   Draft,
@@ -124,6 +125,8 @@ export interface DraftRepository {
   rejectDraft(draftId: string, note: string): Promise<Draft>;
   requestRegeneration(draftId: string, note: string): Promise<Draft>;
   deleteDraft(draftId: string): Promise<void>;
+  publishDraft(draftId: string): Promise<Draft>;
+  exportDraft(draftId: string): Promise<unknown>;
 }
 
 export interface KnowledgeRepository {
@@ -183,6 +186,7 @@ function normalizeData(data: AppData): AppData {
     ...data,
     knowledgeItems: data.knowledgeItems ?? [],
     agentRuns: data.agentRuns ?? [],
+    publishRecords: data.publishRecords ?? [],
   };
 }
 
@@ -551,6 +555,85 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
 
           current.drafts = current.drafts.filter((d) => d.id !== draftId);
           return { next: current, result: undefined };
+        });
+      },
+      async publishDraft(draftId) {
+        return store.updateData((current) => {
+          const draft = current.drafts.find((d) => d.id === draftId);
+          if (!draft) throw new Error('未找到对应的草稿。');
+
+          if (draft.status !== 'ready') {
+            throw new Error('只有已批准的草稿才能发布。');
+          }
+
+          const now = new Date().toISOString();
+          draft.publishState = 'published';
+          draft.updatedAt = now;
+
+          if (draft.taskId) {
+            const task = current.planTasks.find((t) => t.id === draft.taskId);
+            if (task) {
+              task.status = 'published';
+            }
+          }
+
+          const record: PublishRecord = {
+            id: createId('pub'),
+            draftId: draft.id,
+            taskId: draft.taskId,
+            planId: draft.planId,
+            platform: draft.platform,
+            status: 'published',
+            title: draft.title,
+            content: draft.content,
+            excerpt: draft.excerpt,
+            publishedAt: now,
+          };
+          current.publishRecords.push(record);
+
+          return { next: current, result: draft };
+        });
+      },
+      async exportDraft(draftId) {
+        return store.updateData((current) => {
+          const draft = current.drafts.find((d) => d.id === draftId);
+          if (!draft) throw new Error('未找到对应的草稿。');
+
+          const now = new Date().toISOString();
+          const record: PublishRecord = {
+            id: createId('pub'),
+            draftId: draft.id,
+            taskId: draft.taskId,
+            planId: draft.planId,
+            platform: draft.platform,
+            status: 'exported',
+            title: draft.title,
+            content: draft.content,
+            excerpt: draft.excerpt,
+            publishedAt: now,
+          };
+          current.publishRecords.push(record);
+
+          const platformNotes: Record<string, string> = {
+            '微信公众号': '建议通过微信公众号后台"素材管理"上传，设置定时发布。',
+            '小红书': '建议通过小红书创作者中心发布，注意图片尺寸 3:4。',
+            '抖音': '建议通过抖音创作者服务平台上传，选择合适的话题标签。',
+            '视频号': '建议通过微信视频号助手发布。',
+          };
+
+          const pkg = {
+            title: draft.title,
+            platform: draft.platform,
+            group: draft.group,
+            excerpt: draft.excerpt,
+            content: draft.content,
+            publishedAt: now,
+            assets: [] as string[],
+            platformNote: platformNotes[draft.platform] || '请通过相应平台后台发布。',
+            record,
+          };
+
+          return { next: current, result: pkg };
         });
       },
     },

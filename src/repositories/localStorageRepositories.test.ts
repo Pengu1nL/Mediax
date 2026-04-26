@@ -285,4 +285,40 @@ describe('localStorage repositories', () => {
     tasks = await repositories.plans.getTasksByPlanId(plan.id);
     expect(tasks[0].status).toBe('approved');
   });
+
+  it('publishes and exports approved drafts', async () => {
+    const repositories = createLocalStorageRepositories(window.localStorage);
+
+    const plan = await repositories.plans.createPlan({
+      title: '发布测试计划', status: 'active', startDate: '2026-04-01', endDate: '2026-04-30',
+    });
+    const task = await repositories.plans.createTask(plan.id, {
+      title: '发布测试任务', executionType: 'single', schedule: '2026-04-15 10:00',
+      status: 'draft', brief: '测试发布。', channel: '微信公众号', contentType: '图文', reviewPolicy: 'manual_required',
+    });
+    const agentRun = await repositories.agentRuns.startAgentRun(task.id);
+    const draftId = agentRun.outputDraftId!;
+
+    // Approve first
+    await repositories.drafts.approveDraft(draftId);
+
+    // Publish
+    const published = await repositories.drafts.publishDraft(draftId);
+    expect(published.publishState).toBe('published');
+
+    // Verify task status
+    const tasks = await repositories.plans.getTasksByPlanId(plan.id);
+    expect(tasks[0].status).toBe('published');
+
+    // Export another draft
+    const draft2 = await repositories.drafts.createDraft({
+      planId: plan.id, taskId: task.id, platform: '微信公众号', group: '图文',
+      status: 'draft', title: '导出测试', excerpt: '导出', content: '正文',
+    });
+    const exported = await repositories.drafts.exportDraft(draft2.id) as Record<string, unknown>;
+    expect(exported.title).toBe('导出测试');
+    expect(exported.platform).toBe('微信公众号');
+    expect(exported.platformNote).toBeTruthy();
+    expect(exported.record).toBeTruthy();
+  });
 });
