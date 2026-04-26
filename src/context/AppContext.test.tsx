@@ -74,6 +74,11 @@ function createRepositories(refreshDrafts: Promise<Draft[]>): AppRepositories {
       createDraft: vi.fn(async () => draft),
       updateDraft: vi.fn(async () => draft),
     },
+    agentRuns: {
+      getAgentRunById: vi.fn(async () => undefined),
+      getAgentRunsByTaskId: vi.fn(async () => []),
+      startAgentRun: vi.fn(),
+    },
     session: {
       getCurrentUser: vi.fn(async () => user),
       login: vi.fn(async () => user),
@@ -114,6 +119,11 @@ function createLoginRepositories(knowledgeError: Error): AppRepositories {
       getDraftById: vi.fn(async () => undefined),
       createDraft: vi.fn(async () => draft),
       updateDraft: vi.fn(async () => draft),
+    },
+    agentRuns: {
+      getAgentRunById: vi.fn(async () => undefined),
+      getAgentRunsByTaskId: vi.fn(async () => []),
+      startAgentRun: vi.fn(),
     },
     session: {
       getCurrentUser: vi.fn().mockResolvedValueOnce(null).mockResolvedValue(user),

@@ -1,4 +1,5 @@
 import {
+  AgentRun,
   AppData,
   Asset,
   BrandKnowledgeItem,
@@ -60,12 +61,19 @@ export interface ApiDraftRepository {
   updateDraft(draftId: string, input: UpdateDraftInput): Promise<Draft>;
 }
 
+export interface ApiAgentRunRepository {
+  getAgentRunById(runId: string): Promise<AgentRun | undefined>;
+  getAgentRunsByTaskId(taskId: string): Promise<AgentRun[]>;
+  startAgentRun(taskId: string): Promise<AgentRun>;
+}
+
 export interface ApiDataRepositories {
   brand: ApiBrandRepository;
   assets: ApiAssetRepository;
   knowledge: ApiKnowledgeRepository;
   plans: ApiPlanRepository;
   drafts: ApiDraftRepository;
+  agentRuns: ApiAgentRunRepository;
 }
 
 export function createApiSessionRepository(): ApiSessionRepository {
@@ -173,6 +181,17 @@ export function createApiDataRepositories(): ApiDataRepositories {
       },
       async updateDraft(draftId, input) {
         return apiClient.put<Draft>(`/drafts/${draftId}`, input);
+      },
+    },
+    agentRuns: {
+      async getAgentRunById(runId) {
+        return apiClient.get<AgentRun | undefined>(`/agent-runs/${runId}`).catch(() => undefined);
+      },
+      async getAgentRunsByTaskId(taskId) {
+        return apiClient.get<AgentRun[]>(`/agent-runs?taskId=${encodeURIComponent(taskId)}`).catch(() => []);
+      },
+      async startAgentRun(taskId) {
+        return apiClient.post<AgentRun>(`/tasks/${taskId}/agent-runs`);
       },
     },
   };

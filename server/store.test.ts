@@ -22,6 +22,7 @@ function emptyData(): AppData {
     plans: [],
     planTasks: [],
     drafts: [],
+    agentRuns: [],
   };
 }
 

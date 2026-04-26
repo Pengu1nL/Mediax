@@ -176,4 +176,70 @@ describe('localStorage repositories', () => {
       summary: '招生传播不夸大升学结果。',
     })]);
   });
+
+  it('starts an agent run, creates a draft, and links them together', async () => {
+    const repositories = createLocalStorageRepositories(window.localStorage);
+
+    // Set up brand with complete context
+    const brand = await repositories.brand.getProfile();
+    await repositories.brand.saveProfile({
+      ...brand,
+      toneOfVoice: '专业、温暖、可信',
+    });
+
+    // Create plan
+    const plan = await repositories.plans.createPlan({
+      title: 'Agent 测试计划',
+      category: '测试',
+      status: 'active',
+      startDate: '2026-04-01',
+      endDate: '2026-04-30',
+      brandId: brand.id,
+    });
+
+    // Create task
+    const task = await repositories.plans.createTask(plan.id, {
+      title: 'Agent 测试任务',
+      executionType: 'single',
+      schedule: '2026-04-15 10:00',
+      status: 'draft',
+      brief: '这是一个由 Agent 执行的测试任务。',
+      channel: '微信公众号',
+      contentType: '图文',
+      reviewPolicy: 'manual_required',
+      brandId: brand.id,
+    });
+
+    // Start agent run
+    const agentRun = await repositories.agentRuns.startAgentRun(task.id);
+
+    // Verify agent run
+    expect(agentRun.id).toMatch(/^agent-run-/);
+    expect(agentRun.status).toBe('waiting_for_review');
+    expect(agentRun.brandId).toBe(brand.id);
+    expect(agentRun.taskId).toBe(task.id);
+    expect(agentRun.steps).toHaveLength(3);
+    expect(agentRun.outputDraftId).toBeTruthy();
+
+    // Verify draft was created and linked
+    const draft = await repositories.drafts.getDraftById(agentRun.outputDraftId!);
+    expect(draft).toBeTruthy();
+    expect(draft!.taskId).toBe(task.id);
+    expect(draft!.planId).toBe(plan.id);
+    expect(draft!.platform).toBe('微信公众号');
+    expect(draft!.title).toBe('Agent 测试任务');
+
+    // Verify task was updated
+    const tasks = await repositories.plans.getTasksByPlanId(plan.id);
+    const updatedTask = tasks.find((t) => t.id === task.id);
+    expect(updatedTask).toBeTruthy();
+    expect(updatedTask!.status).toBe('ready_for_review');
+    expect(updatedTask!.linkedDraftId).toBe(draft!.id);
+    expect(updatedTask!.agentRunId).toBe(agentRun.id);
+
+    // Verify agent run is persisted
+    const fetchedRun = await repositories.agentRuns.getAgentRunById(agentRun.id);
+    expect(fetchedRun).toBeTruthy();
+    expect(fetchedRun!.id).toBe(agentRun.id);
+  });
 });

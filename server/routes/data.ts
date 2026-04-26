@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { requireAuth } from '../auth';
 import { loadData, updateData } from '../store';
+import { runAgentTask } from '../agent/runAgentTask';
 import {
   BrandProfile,
   BrandKnowledgeItem,
@@ -463,6 +464,48 @@ export function createDataRouter(): Router {
       res.json(draft);
     } catch (err: any) {
       res.status(err.message.includes('未找到') ? 404 : 500).json({ error: err.message });
+    }
+  });
+
+  // ---- Agent Runs ----
+
+  router.get('/agent-runs', async (req: Request, res: Response) => {
+    try {
+      const taskId = req.query.taskId ? String(req.query.taskId) : '';
+      const data = await loadData();
+      if (taskId) {
+        res.json(data.agentRuns.filter((run) => run.taskId === taskId));
+      } else {
+        res.json(data.agentRuns);
+      }
+    } catch {
+      res.status(500).json({ error: '读取 Agent 执行记录失败。' });
+    }
+  });
+
+  router.get('/agent-runs/:runId', async (req: Request, res: Response) => {
+    try {
+      const { runId } = req.params;
+      const data = await loadData();
+      const agentRun = data.agentRuns.find((run) => run.id === runId);
+      if (!agentRun) {
+        res.status(404).json({ error: '未找到对应的 Agent 执行记录。' });
+        return;
+      }
+      res.json(agentRun);
+    } catch {
+      res.status(500).json({ error: '读取 Agent 执行记录失败。' });
+    }
+  });
+
+  router.post('/tasks/:taskId/agent-runs', async (req: Request, res: Response) => {
+    try {
+      const { taskId } = req.params;
+      const agentRun = await runAgentTask(taskId);
+      res.status(201).json(agentRun);
+    } catch (err: any) {
+      const status = err.message.includes('未找到') ? 404 : 500;
+      res.status(status).json({ error: err.message });
     }
   });
 

@@ -148,6 +148,32 @@ export interface LoginCredentials {
   password: string;
 }
 
+export type AgentRunStatus = 'queued' | 'running' | 'waiting_for_review' | 'completed' | 'failed' | 'cancelled';
+
+export interface AgentRunStep {
+  id: string;
+  label: string;
+  status: 'queued' | 'running' | 'completed' | 'failed';
+  message: string;
+  startedAt?: string;
+  completedAt?: string;
+}
+
+export interface AgentRun {
+  id: string;
+  brandId: string;
+  taskId: string;
+  status: AgentRunStatus;
+  currentStep: string;
+  steps: AgentRunStep[];
+  usedKnowledgeItemIds: string[];
+  usedAssetIds: string[];
+  outputDraftId?: string;
+  error?: string;
+  startedAt: string;
+  completedAt?: string;
+}
+
 export interface AppData {
   brand: BrandProfile;
   assets: Asset[];
@@ -155,4 +181,5 @@ export interface AppData {
   plans: Plan[];
   planTasks: PlanTask[];
   drafts: Draft[];
+  agentRuns: AgentRun[];
 }

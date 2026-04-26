@@ -1,14 +1,13 @@
-import React from 'react';
-import { ArrowLeft, Calendar, CheckCircle2, FileText, Globe, Layers, ShieldCheck, Tag } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft, Calendar, CheckCircle2, FileText, Globe, Layers, Play, ShieldCheck, Tag } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { NotFoundState } from '../components/PageState';
 import { useAppStore } from '../context/AppContext';
 import { AgentTaskStatus } from '../types';
 import { executionTypeLabel, taskStatusLabel, statusPillClass } from '../utils/presentation';
 
-function isTaskReadyForAgent(status: AgentTaskStatus, brief?: string, channel?: string, contentType?: string, reviewPolicy?: string): boolean {
+function isTaskReadyForAgent(brief?: string, channel?: string, contentType?: string, reviewPolicy?: string): boolean {
   return Boolean(
-    (status === 'draft' || status === 'queued') &&
     brief?.trim() &&
     channel?.trim() &&
     contentType?.trim() &&
@@ -19,7 +18,8 @@ function isTaskReadyForAgent(status: AgentTaskStatus, brief?: string, channel?: 
 export default function TaskDetails() {
   const navigate = useNavigate();
   const { planId, taskId } = useParams();
-  const { plans, planTasks, drafts } = useAppStore();
+  const { plans, planTasks, drafts, startAgentRun } = useAppStore();
+  const [agentLoading, setAgentLoading] = useState(false);
 
   const plan = plans.find((p) => p.id === planId);
   const task = planTasks.find((t) => t.id === taskId && t.planId === planId);
@@ -36,7 +36,20 @@ export default function TaskDetails() {
     );
   }
 
-  const taskReady = isTaskReadyForAgent(task.status, task.brief, task.channel, task.contentType, task.reviewPolicy);
+  const taskReady = isTaskReadyForAgent(task.brief, task.channel, task.contentType, task.reviewPolicy);
+
+  const handleStartAgent = async () => {
+    if (!taskReady || agentLoading) return;
+    setAgentLoading(true);
+    try {
+      const run = await startAgentRun(task.id);
+      if (run) {
+        navigate(`/agent-runs/${run.id}`);
+      }
+    } finally {
+      setAgentLoading(false);
+    }
+  };
 
   return (
     <div className="pb-20 space-y-10">
@@ -164,6 +177,29 @@ export default function TaskDetails() {
           <CheckItem label="内容类型" checked={Boolean(task.contentType?.trim())} />
           <CheckItem label="审核策略" checked={Boolean(task.reviewPolicy)} />
         </div>
+
+        {taskReady ? (
+          <div className="mt-6 pt-6 border-t border-zinc-100">
+            <button
+              type="button"
+              onClick={handleStartAgent}
+              disabled={agentLoading}
+              className="inline-flex items-center gap-3 bg-signal-orange text-white px-8 py-4 rounded-2xl font-bold shadow-xl hover:bg-light-orange transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Play size={20} />
+              {agentLoading ? 'Agent 执行中...' : '启动 Agent 执行'}
+            </button>
+            {task.agentRunId ? (
+              <button
+                type="button"
+                onClick={() => navigate(`/agent-runs/${task.agentRunId}`)}
+                className="ml-4 inline-flex items-center gap-2 px-6 py-4 rounded-2xl font-bold border border-zinc-200 text-ink-black hover:border-signal-orange transition-colors text-sm"
+              >
+                查看上次执行记录
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </section>
 
       {linkedDrafts.length > 0 ? (

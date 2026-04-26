@@ -2,6 +2,8 @@ import { createSeedAppData } from '../constants';
 import {
   AppData,
   Asset,
+  AgentRun,
+  AgentRunStep,
   BrandKnowledgeItem,
   BrandProfile,
   Draft,
@@ -125,6 +127,12 @@ export interface KnowledgeRepository {
   createKnowledgeItem(input: CreateKnowledgeItemInput): Promise<BrandKnowledgeItem>;
 }
 
+export interface AgentRunRepository {
+  getAgentRunById(runId: string): Promise<AgentRun | undefined>;
+  getAgentRunsByTaskId(taskId: string): Promise<AgentRun[]>;
+  startAgentRun(taskId: string): Promise<AgentRun>;
+}
+
 export interface SessionRepository {
   getCurrentUser(): Promise<SessionUser | null>;
   login(credentials: LoginCredentials): Promise<SessionUser>;
@@ -137,6 +145,7 @@ export interface AppRepositories {
   knowledge: KnowledgeRepository;
   plans: PlanRepository;
   drafts: DraftRepository;
+  agentRuns: AgentRunRepository;
   session: SessionRepository;
 }
 
@@ -169,6 +178,7 @@ function normalizeData(data: AppData): AppData {
   return {
     ...data,
     knowledgeItems: data.knowledgeItems ?? [],
+    agentRuns: data.agentRuns ?? [],
   };
 }
 
@@ -440,6 +450,94 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
           });
           draft.updatedAt = new Date().toISOString();
           return { next: current, result: draft };
+        });
+      },
+    },
+    agentRuns: {
+      async getAgentRunById(runId) {
+        return clone(store.readData().agentRuns.find((run) => run.id === runId));
+      },
+      async getAgentRunsByTaskId(taskId) {
+        return clone(store.readData().agentRuns.filter((run) => run.taskId === taskId));
+      },
+      async startAgentRun(taskId) {
+        return store.updateData((current) => {
+          const task = current.planTasks.find((t) => t.id === taskId);
+          if (!task) throw new Error('未找到对应的任务。');
+          const plan = current.plans.find((p) => p.id === task.planId);
+          if (!plan) throw new Error('未找到关联的计划。');
+          const brand = current.brand;
+          const knowledge = current.knowledgeItems.filter((k) => k.brandId === brand.id);
+
+          const now = new Date().toISOString();
+          const runId = createId('agent-run');
+
+          const steps: AgentRunStep[] = [
+            {
+              id: createId('step'),
+              label: '加载品牌上下文',
+              status: 'completed',
+              message: `已加载品牌"${brand.name}"（${brand.industry}）、计划"${plan.title}"和 ${knowledge.length} 条品牌知识。`,
+              startedAt: now,
+              completedAt: now,
+            },
+            {
+              id: createId('step'),
+              label: '分析任务 Brief',
+              status: 'completed',
+              message: `任务渠道：${task.channel || '未指定'}，内容类型：${task.contentType || '未指定'}。`,
+              startedAt: now,
+              completedAt: now,
+            },
+            {
+              id: createId('step'),
+              label: '生成内容草稿',
+              status: 'completed',
+              message: `基于品牌语气"${brand.toneOfVoice || '专业、清晰'}"生成${task.contentType || '内容'}草稿。`,
+              startedAt: now,
+              completedAt: now,
+            },
+          ];
+
+          // 确定性草稿生成
+          const tone = brand.toneOfVoice || '专业、清晰';
+          const draft: Draft = {
+            id: createId('draft'),
+            planId: plan.id,
+            taskId: task.id,
+            platform: task.channel || '微信公众号',
+            group: task.contentType || '未分组',
+            status: 'review',
+            title: task.title,
+            excerpt: (task.brief || task.title).slice(0, 80),
+            content: `以${tone}的语气，为${brand.name}创作：\n\n${task.brief || task.title}`,
+            updatedAt: now,
+          };
+
+          current.drafts.unshift(draft);
+
+          // 更新任务状态和关联
+          task.status = 'ready_for_review';
+          task.linkedDraftId = draft.id;
+          task.linkedDraftIds = [...(task.linkedDraftIds ?? []), draft.id];
+          task.agentRunId = runId;
+
+          const agentRun: AgentRun = {
+            id: runId,
+            brandId: brand.id,
+            taskId: task.id,
+            status: 'waiting_for_review',
+            currentStep: '生成内容草稿',
+            steps,
+            usedKnowledgeItemIds: knowledge.map((k) => k.id),
+            usedAssetIds: [],
+            outputDraftId: draft.id,
+            startedAt: now,
+          };
+
+          current.agentRuns.push(agentRun);
+
+          return { next: current, result: agentRun };
         });
       },
     },

@@ -19,6 +19,7 @@ import Onboarding from './pages/Onboarding';
 import PlanDetails from './pages/PlanDetails';
 import Plans from './pages/Plans';
 import TaskDetails from './pages/TaskDetails';
+import AgentRunDetails from './pages/AgentRunDetails';
 
 function RequireAuth() {
   const { ready, currentUser } = useAppStore();
@@ -137,6 +138,7 @@ export default function App({ repositories }: { repositories?: import('./reposit
               <Route path="/plans" element={<Plans />} />
               <Route path="/plans/:planId" element={<PlanDetails />} />
               <Route path="/plans/:planId/tasks/:taskId" element={<TaskDetails />} />
+              <Route path="/agent-runs/:runId" element={<AgentRunDetails />} />
               <Route path="/drafts" element={<Drafts />} />
               <Route path="/drafts/:draftId" element={<DraftEditor />} />
               <Route path="*" element={<ProtectedNotFound />} />

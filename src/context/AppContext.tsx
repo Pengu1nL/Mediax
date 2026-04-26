@@ -23,6 +23,7 @@ import {
   createApiDataRepositories,
 } from '../repositories/apiRepositories';
 import {
+  AgentRun,
   AppData,
   BrandKnowledgeItem,
   BrandProfile,
@@ -63,6 +64,7 @@ interface AppContextValue extends AppSnapshot {
     input: UpdateDraftInput,
   ) => Promise<Draft | undefined>;
   createKnowledgeItem: (input: CreateKnowledgeItemInput) => Promise<BrandKnowledgeItem | undefined>;
+  startAgentRun: (taskId: string) => Promise<AgentRun | undefined>;
 }
 
 const seed = createSeedAppData();
@@ -113,7 +115,7 @@ export function AppProvider({
         dataRepos.drafts.getDrafts(),
       ]);
       const knowledgeItems = await dataRepos.knowledge.getKnowledgeItems(brand.id).catch(() => []);
-      setSnapshot({ brand, assets, knowledgeItems, plans, planTasks, drafts, currentUser });
+      setSnapshot({ brand, assets, knowledgeItems, plans, planTasks, drafts, agentRuns: [], currentUser });
       setError(null);
     } catch (nextError) {
       setError(getErrorMessage(nextError));
@@ -182,6 +184,7 @@ export function AppProvider({
       createDraft: (input) => runMutation(() => dataRepos.drafts.createDraft(input)),
       updateDraft: (draftId, input) => runMutation(() => dataRepos.drafts.updateDraft(draftId, input)),
       createKnowledgeItem: (input) => runMutation(() => dataRepos.knowledge.createKnowledgeItem(input)),
+      startAgentRun: (taskId) => runMutation(() => dataRepos.agentRuns.startAgentRun(taskId)),
     }),
     [error, ready, refresh, dataRepos, session, runMutation, snapshot],
   );

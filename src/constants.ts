@@ -242,5 +242,6 @@ export function createSeedAppData(): AppData {
     plans: structuredClone(SEED_PLANS),
     planTasks: structuredClone(SEED_PLAN_TASKS),
     drafts: structuredClone(SEED_DRAFTS),
+    agentRuns: [],
   };
 }
