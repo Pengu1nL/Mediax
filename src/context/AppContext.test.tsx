@@ -73,6 +73,10 @@ function createRepositories(refreshDrafts: Promise<Draft[]>): AppRepositories {
       getDraftById: vi.fn(async () => undefined),
       createDraft: vi.fn(async () => draft),
       updateDraft: vi.fn(async () => draft),
+      approveDraft: vi.fn(),
+      rejectDraft: vi.fn(),
+      requestRegeneration: vi.fn(),
+      deleteDraft: vi.fn(async () => undefined),
     },
     agentRuns: {
       getAgentRunById: vi.fn(async () => undefined),
@@ -119,6 +123,10 @@ function createLoginRepositories(knowledgeError: Error): AppRepositories {
       getDraftById: vi.fn(async () => undefined),
       createDraft: vi.fn(async () => draft),
       updateDraft: vi.fn(async () => draft),
+      approveDraft: vi.fn(),
+      rejectDraft: vi.fn(),
+      requestRegeneration: vi.fn(),
+      deleteDraft: vi.fn(async () => undefined),
     },
     agentRuns: {
       getAgentRunById: vi.fn(async () => undefined),

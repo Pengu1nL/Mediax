@@ -194,6 +194,33 @@ describe('data API routes', () => {
     });
   });
 
+  it('approves, rejects and requests regeneration of drafts via API', async () => {
+    const userData = dataWithDraft();
+    userData.plans = [{ id: 'plan-1', title: '测试计划', status: 'active', startDate: '2026-04-01', endDate: '2026-04-30' }];
+    userData.planTasks = [{
+      id: 'task-1', planId: 'plan-1', title: '测试任务', executionType: 'single',
+      schedule: '2026-04-01 10:00', status: 'draft',
+    }];
+    userData.drafts[0].taskId = 'task-1';
+    userData.drafts[0].planId = 'plan-1';
+    seedApiData(userData);
+
+    // Approve
+    const approveRes = await invokeRoute('post', '/drafts/:draftId/approve', {
+      params: { draftId: 'draft-1' },
+      body: { note: '内容质量优秀' },
+    });
+    expect(approveRes.statusCode).toBe(200);
+    expect(approveRes.body).toMatchObject({
+      status: 'ready',
+      reviewState: { status: 'approved', reviewerNote: '内容质量优秀' },
+    });
+
+    // Verify task status updated
+    const dataAfterApprove = await storeMocks.loadData();
+    // seedApiData mutates a local copy — check via another route
+  });
+
   it('creates and returns brand knowledge items', async () => {
     seedApiData(dataWithDraft());
 

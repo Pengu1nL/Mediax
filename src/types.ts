@@ -123,6 +123,33 @@ export interface PlanTask {
 
 export type DraftStatus = 'draft' | 'review' | 'ready';
 
+export interface DraftReviewState {
+  status: 'not_required' | 'pending' | 'approved' | 'rejected' | 'changes_requested';
+  reviewerNote?: string;
+  reviewedAt?: string;
+}
+
+export interface DraftSource {
+  type: 'agent' | 'manual' | 'import';
+  agentRunId?: string;
+  description: string;
+}
+
+export interface DraftQualityCheck {
+  label: string;
+  passed: boolean;
+  message: string;
+}
+
+export interface DraftVersion {
+  id: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  createdAt: string;
+  agentRunId?: string;
+}
+
 export interface Draft {
   id: string;
   planId?: string;
@@ -134,6 +161,14 @@ export interface Draft {
   content: string;
   status: DraftStatus;
   updatedAt: string;
+  agentRunId?: string;
+  contentType?: string;
+  assets?: string[];
+  sources?: DraftSource[];
+  qualityChecks?: DraftQualityCheck[];
+  reviewState?: DraftReviewState;
+  versions?: DraftVersion[];
+  publishState?: string;
 }
 
 export interface SessionUser {

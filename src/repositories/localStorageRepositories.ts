@@ -120,6 +120,10 @@ export interface DraftRepository {
   getDraftById(draftId: string): Promise<Draft | undefined>;
   createDraft(input: CreateDraftInput): Promise<Draft>;
   updateDraft(draftId: string, input: UpdateDraftInput): Promise<Draft>;
+  approveDraft(draftId: string, note?: string): Promise<Draft>;
+  rejectDraft(draftId: string, note: string): Promise<Draft>;
+  requestRegeneration(draftId: string, note: string): Promise<Draft>;
+  deleteDraft(draftId: string): Promise<void>;
 }
 
 export interface KnowledgeRepository {
@@ -450,6 +454,103 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
           });
           draft.updatedAt = new Date().toISOString();
           return { next: current, result: draft };
+        });
+      },
+      async approveDraft(draftId, note) {
+        return store.updateData((current) => {
+          const draft = current.drafts.find((item) => item.id === draftId);
+          if (!draft) throw new Error('未找到对应的草稿。');
+
+          const now = new Date().toISOString();
+          draft.status = 'ready';
+          draft.reviewState = {
+            status: 'approved',
+            reviewerNote: note,
+            reviewedAt: now,
+          };
+          draft.updatedAt = now;
+
+          // 更新关联任务状态
+          if (draft.taskId) {
+            const task = current.planTasks.find((t) => t.id === draft.taskId);
+            if (task) {
+              task.status = 'approved';
+            }
+          }
+
+          return { next: current, result: draft };
+        });
+      },
+      async rejectDraft(draftId, note) {
+        return store.updateData((current) => {
+          const draft = current.drafts.find((item) => item.id === draftId);
+          if (!draft) throw new Error('未找到对应的草稿。');
+
+          const now = new Date().toISOString();
+          draft.status = 'review';
+          draft.reviewState = {
+            status: 'rejected',
+            reviewerNote: note,
+            reviewedAt: now,
+          };
+          draft.updatedAt = now;
+
+          // 保持任务为 ready_for_review
+          if (draft.taskId) {
+            const task = current.planTasks.find((t) => t.id === draft.taskId);
+            if (task) {
+              task.status = 'ready_for_review';
+            }
+          }
+
+          return { next: current, result: draft };
+        });
+      },
+      async requestRegeneration(draftId, note) {
+        return store.updateData((current) => {
+          const draft = current.drafts.find((item) => item.id === draftId);
+          if (!draft) throw new Error('未找到对应的草稿。');
+
+          const now = new Date().toISOString();
+          draft.reviewState = {
+            status: 'changes_requested',
+            reviewerNote: note,
+            reviewedAt: now,
+          };
+          draft.status = 'draft';
+          draft.updatedAt = now;
+
+          // 任务回到 queued，等待重新生成
+          if (draft.taskId) {
+            const task = current.planTasks.find((t) => t.id === draft.taskId);
+            if (task) {
+              task.status = 'queued';
+            }
+          }
+
+          return { next: current, result: draft };
+        });
+      },
+      async deleteDraft(draftId) {
+        store.updateData((current) => {
+          const draft = current.drafts.find((d) => d.id === draftId);
+          if (!draft) throw new Error('未找到对应的草稿。');
+
+          // 解除关联任务的 linkedDraftId
+          if (draft.taskId) {
+            const task = current.planTasks.find((t) => t.id === draft.taskId);
+            if (task) {
+              if (task.linkedDraftId === draftId) {
+                task.linkedDraftId = undefined;
+              }
+              if (task.linkedDraftIds) {
+                task.linkedDraftIds = task.linkedDraftIds.filter((id) => id !== draftId);
+              }
+            }
+          }
+
+          current.drafts = current.drafts.filter((d) => d.id !== draftId);
+          return { next: current, result: undefined };
         });
       },
     },

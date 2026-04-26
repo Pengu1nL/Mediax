@@ -65,6 +65,10 @@ interface AppContextValue extends AppSnapshot {
   ) => Promise<Draft | undefined>;
   createKnowledgeItem: (input: CreateKnowledgeItemInput) => Promise<BrandKnowledgeItem | undefined>;
   startAgentRun: (taskId: string) => Promise<AgentRun | undefined>;
+  approveDraft: (draftId: string, note?: string) => Promise<Draft | undefined>;
+  rejectDraft: (draftId: string, note: string) => Promise<Draft | undefined>;
+  requestRegeneration: (draftId: string, note: string) => Promise<Draft | undefined>;
+  deleteDraft: (draftId: string) => Promise<void>;
 }
 
 const seed = createSeedAppData();
@@ -106,16 +110,17 @@ export function AppProvider({
 
   const refresh = useCallback(async () => {
     try {
-      const [currentUser, brand, assets, plans, planTasks, drafts] = await Promise.all([
+      const [currentUser, brand, assets, plans, planTasks, drafts, agentRuns] = await Promise.all([
         session.getCurrentUser(),
         dataRepos.brand.getProfile(),
         dataRepos.assets.getAssets(),
         dataRepos.plans.getPlans(),
         dataRepos.plans.getAllTasks(),
         dataRepos.drafts.getDrafts(),
+        dataRepos.agentRuns.getAgentRunsByTaskId('__all__').catch(() => [] as AgentRun[]),
       ]);
       const knowledgeItems = await dataRepos.knowledge.getKnowledgeItems(brand.id).catch(() => []);
-      setSnapshot({ brand, assets, knowledgeItems, plans, planTasks, drafts, agentRuns: [], currentUser });
+      setSnapshot({ brand, assets, knowledgeItems, plans, planTasks, drafts, agentRuns, currentUser });
       setError(null);
     } catch (nextError) {
       setError(getErrorMessage(nextError));
@@ -185,6 +190,10 @@ export function AppProvider({
       updateDraft: (draftId, input) => runMutation(() => dataRepos.drafts.updateDraft(draftId, input)),
       createKnowledgeItem: (input) => runMutation(() => dataRepos.knowledge.createKnowledgeItem(input)),
       startAgentRun: (taskId) => runMutation(() => dataRepos.agentRuns.startAgentRun(taskId)),
+      approveDraft: (draftId, note) => runMutation(() => dataRepos.drafts.approveDraft(draftId, note)),
+      rejectDraft: (draftId, note) => runMutation(() => dataRepos.drafts.rejectDraft(draftId, note)),
+      requestRegeneration: (draftId, note) => runMutation(() => dataRepos.drafts.requestRegeneration(draftId, note)),
+      deleteDraft: (draftId) => runMutation(() => dataRepos.drafts.deleteDraft(draftId)).then(() => undefined),
     }),
     [error, ready, refresh, dataRepos, session, runMutation, snapshot],
   );

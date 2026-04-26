@@ -592,6 +592,7 @@ function TaskRow({
   onOpenDraft: () => void;
 }) {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <tr className="hover:bg-zinc-50/80 transition-colors group">
@@ -629,17 +630,34 @@ function TaskRow({
         </button>
       </td>
       <td className="py-8 px-10 text-right">
-        <div className="inline-flex items-center gap-3">
-          <button type="button" onClick={onEdit} className="text-zinc-300 hover:text-signal-orange transition-colors p-2">
-            <MoreHorizontal size={20} />
-          </button>
+        <div className="relative inline-block">
           <button
             type="button"
-            onClick={onDelete}
-            className="text-xs font-bold text-zinc-400 hover:text-red-600 transition-colors"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            onBlur={() => setTimeout(() => setMenuOpen(false), 150)}
+            className="text-zinc-300 hover:text-ink-black transition-colors p-2"
+            aria-label="任务操作"
           >
-            删除
+            <MoreHorizontal size={20} />
           </button>
+          {menuOpen ? (
+            <div className="absolute right-0 top-full mt-1 bg-white rounded-2xl shadow-xl border border-zinc-100 py-2 min-w-[120px] z-50">
+              <button
+                type="button"
+                onMouseDown={() => { onEdit(); setMenuOpen(false); }}
+                className="w-full text-left px-5 py-2.5 text-sm font-bold text-ink-black hover:bg-zinc-50 transition-colors"
+              >
+                编辑
+              </button>
+              <button
+                type="button"
+                onMouseDown={() => { onDelete(); setMenuOpen(false); }}
+                className="w-full text-left px-5 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
+              >
+                删除
+              </button>
+            </div>
+          ) : null}
         </div>
       </td>
     </tr>

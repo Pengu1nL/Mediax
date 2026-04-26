@@ -467,13 +467,102 @@ export function createDataRouter(): Router {
     }
   });
 
+  // ---- Draft Delete ----
+
+  router.delete('/drafts/:draftId', async (req: Request, res: Response) => {
+    try {
+      const { draftId } = req.params;
+      await updateData((data) => {
+        const draft = data.drafts.find((d) => d.id === draftId);
+        if (!draft) throw new Error('未找到对应的草稿。');
+
+        // 解除关联任务的引用
+        if (draft.taskId) {
+          const task = data.planTasks.find((t) => t.id === draft.taskId);
+          if (task) {
+            if (task.linkedDraftId === draftId) {
+              task.linkedDraftId = undefined;
+            }
+            if (task.linkedDraftIds) {
+              task.linkedDraftIds = task.linkedDraftIds.filter((id) => id !== draftId);
+            }
+          }
+        }
+
+        data.drafts = data.drafts.filter((d) => d.id !== draftId);
+        return { data, result: undefined };
+      });
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(err.message.includes('未找到') ? 404 : 500).json({ error: err.message });
+    }
+  });
+
+  // ---- Draft Review ----
+
+  const reviewDraft = async (
+    req: Request,
+    res: Response,
+    action: 'approve' | 'reject' | 'request_regeneration',
+  ) => {
+    try {
+      const { draftId } = req.params;
+      const note = (req.body as { note?: string }).note;
+      const now = new Date().toISOString();
+
+      const draft = await updateData((data) => {
+        const draft = data.drafts.find((d) => d.id === draftId);
+        if (!draft) throw new Error('未找到对应的草稿。');
+
+        draft.reviewState = {
+          status: action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'changes_requested',
+          reviewerNote: note,
+          reviewedAt: now,
+        };
+        draft.updatedAt = now;
+
+        if (action === 'approve') {
+          draft.status = 'ready';
+        } else if (action === 'reject') {
+          draft.status = 'review';
+        } else {
+          draft.status = 'draft';
+        }
+
+        // 同步关联任务状态
+        if (draft.taskId) {
+          const task = data.planTasks.find((t) => t.id === draft.taskId);
+          if (task) {
+            if (action === 'approve') {
+              task.status = 'approved';
+            } else if (action === 'reject') {
+              task.status = 'ready_for_review';
+            } else {
+              task.status = 'queued';
+            }
+          }
+        }
+
+        return { data, result: draft };
+      });
+
+      res.json(draft);
+    } catch (err: any) {
+      res.status(err.message.includes('未找到') ? 404 : 500).json({ error: err.message });
+    }
+  };
+
+  router.post('/drafts/:draftId/approve', (req, res) => reviewDraft(req, res, 'approve'));
+  router.post('/drafts/:draftId/reject', (req, res) => reviewDraft(req, res, 'reject'));
+  router.post('/drafts/:draftId/request-regeneration', (req, res) => reviewDraft(req, res, 'request_regeneration'));
+
   // ---- Agent Runs ----
 
   router.get('/agent-runs', async (req: Request, res: Response) => {
     try {
       const taskId = req.query.taskId ? String(req.query.taskId) : '';
       const data = await loadData();
-      if (taskId) {
+      if (taskId && taskId !== '__all__') {
         res.json(data.agentRuns.filter((run) => run.taskId === taskId));
       } else {
         res.json(data.agentRuns);

@@ -161,7 +161,11 @@ describe('App routing', () => {
 
     expect(await screen.findByText('主视觉海报发布 - 微信公众号')).toBeInTheDocument();
 
-    await user.click(screen.getAllByRole('button', { name: '删除' })[0]);
+    // 打开第一个任务的三点菜单
+    await user.click(screen.getAllByRole('button', { name: '任务操作' })[0]);
+    // 点击菜单中的删除
+    const deleteButtons = screen.getAllByText('删除');
+    await user.click(deleteButtons[0]);
 
     expect(confirm).toHaveBeenCalledWith('删除任务后，关联草稿会保留但不再挂在任务下。确认继续吗？');
     expect(screen.getByText('主视觉海报发布 - 微信公众号')).toBeInTheDocument();

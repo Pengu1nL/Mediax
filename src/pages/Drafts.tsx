@@ -7,7 +7,7 @@ import { DraftStatus } from '../types';
 import { draftStatusLabel, formatRelativeTimestamp, statusPillClass } from '../utils/presentation';
 
 export default function Drafts() {
-  const { drafts, plans, planTasks } = useAppStore();
+  const { drafts, plans, planTasks, deleteDraft } = useAppStore();
   const [search, setSearch] = useState('');
   const [platform, setPlatform] = useState('all');
   const [group, setGroup] = useState('all');
@@ -134,12 +134,25 @@ export default function Drafts() {
                     <Clock size={14} />
                     {formatRelativeTimestamp(draft.updatedAt)}
                   </div>
-                  <Link
-                    to={`/drafts/${draft.id}`}
-                    className="text-ink-black hover:text-signal-orange transition-colors flex items-center gap-1 font-bold text-sm"
-                  >
-                    继续编辑 <ArrowRight size={18} />
-                  </Link>
+                  <div className="flex items-center gap-4">
+                    <Link
+                      to={`/drafts/${draft.id}`}
+                      className="text-ink-black hover:text-signal-orange transition-colors flex items-center gap-1 font-bold text-sm"
+                    >
+                      继续编辑 <ArrowRight size={18} />
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={async (event) => {
+                        event.preventDefault();
+                        if (!window.confirm('删除草稿后无法恢复。确认继续吗？')) return;
+                        await deleteDraft(draft.id);
+                      }}
+                      className="text-xs font-bold text-zinc-400 hover:text-red-600 transition-colors"
+                    >
+                      删除
+                    </button>
+                  </div>
                 </div>
               </div>
             );

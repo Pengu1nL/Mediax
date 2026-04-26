@@ -242,4 +242,47 @@ describe('localStorage repositories', () => {
     expect(fetchedRun).toBeTruthy();
     expect(fetchedRun!.id).toBe(agentRun.id);
   });
+
+  it('approves, rejects, and requests regeneration of a draft', async () => {
+    const repositories = createLocalStorageRepositories(window.localStorage);
+
+    // Create a draft via agent run (has taskId for status sync)
+    const brand = await repositories.brand.getProfile();
+    await repositories.brand.saveProfile({ ...brand, toneOfVoice: '专业' });
+    const plan = await repositories.plans.createPlan({
+      title: '审核测试计划', status: 'active', startDate: '2026-04-01', endDate: '2026-04-30',
+    });
+    const task = await repositories.plans.createTask(plan.id, {
+      title: '审核测试任务', executionType: 'single', schedule: '2026-04-15 10:00',
+      status: 'draft', brief: '测试审核流转。', channel: '微信公众号', contentType: '图文', reviewPolicy: 'manual_required',
+    });
+    const agentRun = await repositories.agentRuns.startAgentRun(task.id);
+    const draftId = agentRun.outputDraftId!;
+
+    // Verify initial state: task should be 'ready_for_review'
+    let tasks = await repositories.plans.getTasksByPlanId(plan.id);
+    expect(tasks[0].status).toBe('ready_for_review');
+
+    // Reject
+    const rejected = await repositories.drafts.rejectDraft(draftId, '品牌语气不够专业');
+    expect(rejected.reviewState?.status).toBe('rejected');
+    expect(rejected.reviewState?.reviewerNote).toBe('品牌语气不够专业');
+    expect(rejected.status).toBe('review');
+    tasks = await repositories.plans.getTasksByPlanId(plan.id);
+    expect(tasks[0].status).toBe('ready_for_review');
+
+    // Request regeneration
+    const regenerated = await repositories.drafts.requestRegeneration(draftId, '请加入更多数据支撑');
+    expect(regenerated.reviewState?.status).toBe('changes_requested');
+    expect(regenerated.status).toBe('draft');
+    tasks = await repositories.plans.getTasksByPlanId(plan.id);
+    expect(tasks[0].status).toBe('queued');
+
+    // Approve
+    const approved = await repositories.drafts.approveDraft(draftId, '内容质量优秀');
+    expect(approved.reviewState?.status).toBe('approved');
+    expect(approved.status).toBe('ready');
+    tasks = await repositories.plans.getTasksByPlanId(plan.id);
+    expect(tasks[0].status).toBe('approved');
+  });
 });

@@ -59,6 +59,10 @@ export interface ApiDraftRepository {
   getDraftById(draftId: string): Promise<Draft | undefined>;
   createDraft(input: CreateDraftInput): Promise<Draft>;
   updateDraft(draftId: string, input: UpdateDraftInput): Promise<Draft>;
+  approveDraft(draftId: string, note?: string): Promise<Draft>;
+  rejectDraft(draftId: string, note: string): Promise<Draft>;
+  requestRegeneration(draftId: string, note: string): Promise<Draft>;
+  deleteDraft(draftId: string): Promise<void>;
 }
 
 export interface ApiAgentRunRepository {
@@ -181,6 +185,18 @@ export function createApiDataRepositories(): ApiDataRepositories {
       },
       async updateDraft(draftId, input) {
         return apiClient.put<Draft>(`/drafts/${draftId}`, input);
+      },
+      async approveDraft(draftId, note) {
+        return apiClient.post<Draft>(`/drafts/${draftId}/approve`, { note });
+      },
+      async rejectDraft(draftId, note) {
+        return apiClient.post<Draft>(`/drafts/${draftId}/reject`, { note });
+      },
+      async requestRegeneration(draftId, note) {
+        return apiClient.post<Draft>(`/drafts/${draftId}/request-regeneration`, { note });
+      },
+      async deleteDraft(draftId) {
+        await apiClient.delete(`/drafts/${draftId}`);
       },
     },
     agentRuns: {
