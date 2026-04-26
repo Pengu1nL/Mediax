@@ -85,8 +85,10 @@ describe('runAgentTask', () => {
     let storedDraft: unknown = null;
     let storedAgentRun: unknown = null;
 
+    const seed = seedData();
+    storeMocks.loadData.mockResolvedValue(seed);
     storeMocks.updateData.mockImplementation(async (fn: (data: AppData) => { data: AppData; result: unknown }) => {
-      const cloned = JSON.parse(JSON.stringify(seedData())) as AppData;
+      const cloned = JSON.parse(JSON.stringify(seed)) as AppData;
       const next = fn(cloned);
       storedDraft = next.data.drafts[0];
       storedAgentRun = next.data.agentRuns[0];
