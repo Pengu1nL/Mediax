@@ -4,85 +4,77 @@
 
 # Mediax
 
-Mediax is a Vite + React content operations workspace prototype for a single brand team.  
-This version turns the original static UI into a local-first app with:
+Mediax 是一个 Agent 驱动的品牌内容运营平台。从品牌上下文建立 → 知识库 → Agent 计划与任务 → AI 内容生成 → 草稿审核 → 发布，覆盖完整内容工作流。
 
-- route-based navigation
-- server-backed login guard
-- persistent brand profile data through the local API server
-- plan -> task -> draft workflow
-- draft editing and local storage persistence
-- local asset folder management for images, PDFs, videos, and common documents
+## 功能概览
 
-## Tech Stack
+| 模块 | 说明 |
+|------|------|
+| **品牌管理** | 品牌档案（名称/行业/定位/语气/表达规范/渠道），首次使用强制创建，完整度评分 |
+| **品牌知识库** | 素材转知识条目，支持标签、摘要、来源追溯，Agent 生成时自动注入 |
+| **计划与任务** | Agent-ready 任务（Brief/渠道/内容类型/审核策略），单次执行 / 循环执行调度 |
+| **Agent 执行** | 一键启动 Agent，加载品牌上下文 → 分析 Brief → LLM 生成草稿（DeepSeek），含执行步骤追踪 |
+| **草稿审核** | 编辑器 + Agent 来源面板 + 审核操作（批准/拒绝/要求重新生成），状态自动同步到关联任务 |
+| **发布导出** | 模拟发布 + 导出发布包（含平台发布说明），三级审核策略优先级 |
 
-- React 19
-- TypeScript
-- Vite
-- Tailwind CSS 4
-- React Router
-- Vitest + Testing Library
+## 技术栈
 
-## Local Development
+- **前端：** React 19、TypeScript、Vite、Tailwind CSS 4、React Router、Motion
+- **后端：** Express、JWT Auth、File System Access API
+- **AI：** DeepSeek LLM（可扩展 OpenAI/Claude 等）
+- **测试：** Vitest、Testing Library
 
-**Prerequisites:** Node.js 20+ recommended
+## 本地开发
 
-1. Install dependencies
+**前置要求：** Node.js 20+
 
 ```bash
 npm install
-```
-
-2. Copy the example env file if needed
-
-```bash
 cp .env.example .env
 ```
 
-`npm run dev` provides local fallback credentials when `.env` is absent. For production, set `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and a strong `JWT_SECRET`.
-
-3. Start the API server and Vite client
+编辑 `.env`，填入 DeepSeek API Key（从 [platform.deepseek.com](https://platform.deepseek.com/) 获取）以启用 AI 内容生成。不填 Key 时系统使用模板生成作为 fallback。
 
 ```bash
 npm run dev
 ```
 
-This starts the API server on `http://localhost:3001` and the Vite client on `http://localhost:3000`.
+前端 `http://localhost:3000`，API `http://localhost:3001`。
 
-4. Open the app
+**Demo 登录：**
 
-```text
-http://localhost:3000
 ```
-
-## Demo Login
-
-Use these local development credentials when `.env` is not overriding them:
-
-```text
 Email: admin@mediax.local
 Password: mediax2026
 ```
 
-## Available Scripts
+## 脚本
 
 ```bash
-npm run dev
-npm run server
-npm run dev:client
-npm test
-npm run lint
-npm run build
+npm run dev          # 启动 API + Vite 客户端
+npm run server       # 仅启动 API
+npm run dev:client   # 仅启动 Vite 客户端
+npm test             # 运行测试
+npm run lint         # TypeScript 类型检查
+npm run build        # 生产构建
 ```
 
-## Project Notes
+## 项目说明
 
-- App data is stored by the local API server in `data.json`, which is ignored by Git.
-- This repository currently targets a single-brand, single-admin workflow.
-- `Library` binds to a local asset folder through the File System Access API. Use Chrome or Edge for folder selection, recursive scanning, current-directory folder/file browsing, upload-to-folder, folder upload with nested paths preserved, rename, download, and delete operations.
-- Local asset management supports images, PDFs, videos, and common documents (`.doc`, `.docx`, `.xls`, `.xlsx`, `.ppt`, `.pptx`, `.txt`, `.md`, `.csv`, `.rtf`) up to 50MB per file.
-- External publishing integrations and AI features are not part of the current release.
+- 数据存储在 `data.json`（Git 忽略），Express 服务端读写，支持本地持久化。
+- 当前为单品牌、单管理员模式。
+- 素材库通过 File System Access API 绑定本地文件夹（需 Chrome/Edge），支持图片/PDF/视频/文档的浏览、上传、重命名、下载、删除，单文件最大 50MB。
+- Agent 生成默认使用 DeepSeek LLM，可通过 `server/llm/` 模块扩展其他厂商。
+- `.env` 已加入 `.gitignore`，API Key 不会提交到仓库。
 
-## Origin
+## 架构
 
-This project started from an AI Studio-exported front-end prototype and was then adapted into a more usable local-first workflow app.
+```
+src/                  → React 前端（pages / components / context / repositories）
+server/
+  agent/              → Agent 执行引擎（品牌上下文加载、草稿生成、任务编排）
+  llm/                → LLM 提供商（DeepSeek，可扩展）
+  publishers/         → 模拟发布 + 导出
+  routes/             → Express API 路由
+  store.ts            → 数据读写 + 原子更新
+```
