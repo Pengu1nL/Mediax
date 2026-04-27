@@ -604,7 +604,11 @@ export function createDataRouter(): Router {
   router.post('/tasks/:taskId/agent-runs', async (req: Request, res: Response) => {
     try {
       const { taskId } = req.params;
-      const agentRun = await runAgentTask(taskId);
+      const { generateImage, imageSize } = (req.body || {}) as {
+        generateImage?: boolean;
+        imageSize?: string;
+      };
+      const agentRun = await runAgentTask(taskId, { generateImage, imageSize });
       res.status(201).json(agentRun);
     } catch (err: any) {
       const status = err.message.includes('未找到') ? 404 : 500;

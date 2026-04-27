@@ -20,7 +20,10 @@ function createId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 }
 
-export async function runAgentTask(taskId: string): Promise<AgentRun> {
+export async function runAgentTask(
+  taskId: string,
+  options?: { generateImage?: boolean; imageSize?: string },
+): Promise<AgentRun> {
   const runId = createId('agent-run');
 
   // Step 1: Load context and generate draft (may call LLM — do this OUTSIDE updateData)
@@ -85,23 +88,22 @@ export async function runAgentTask(taskId: string): Promise<AgentRun> {
   // Step 4: Generate cover image (if applicable)
   let imageBase64: string | undefined;
   let imageAssetId: string | undefined;
+  const imagePrompt = [
+    `为品牌"${context.brand.name}"的内容创作一张配图。`,
+    `品牌定位：${context.brand.positioning || context.brand.summary}`,
+    `品牌风格：${context.brand.toneOfVoice || '专业、清晰'}`,
+    `内容主题：${draftInput.title}`,
+    context.task.brief ? `内容简介：${context.task.brief}` : '',
+    `发布平台：${context.task.channel || '通用'}`,
+    `图片用途：${context.task.contentType || '配图'}`,
+    `要求：高质量、符合品牌调性、视觉吸引力强。`,
+  ].filter(Boolean).join('\n');
 
-  if (imageGen && needsImage) {
+  if (imageGen && needsImage && options?.generateImage !== false) {
     try {
-      const imagePrompt = [
-        `为品牌"${context.brand.name}"的内容创作一张配图。`,
-        `品牌定位：${context.brand.positioning || context.brand.summary}`,
-        `品牌风格：${context.brand.toneOfVoice || '专业、清晰'}`,
-        `内容主题：${draftInput.title}`,
-        context.task.brief ? `内容简介：${context.task.brief}` : '',
-        `发布平台：${context.task.channel || '通用'}`,
-        `图片用途：${context.task.contentType || '配图'}`,
-        `要求：高质量、符合品牌调性、视觉吸引力强。`,
-      ].filter(Boolean).join('\n');
-
       const result = await imageGen.generate({
         prompt: imagePrompt,
-        size: '1024x1024',
+        size: options?.imageSize || '1024x1024',
         n: 1,
         quality: 'medium',
       });
@@ -141,13 +143,18 @@ export async function runAgentTask(taskId: string): Promise<AgentRun> {
       status: draftInput.status,
       title: draftInput.title,
       excerpt: draftInput.excerpt,
-      content: imageBase64
-        ? `${draftInput.content}\n\n![配图](data:image/png;base64,${imageBase64})`
-        : draftInput.content,
+      content: draftInput.content,
       updatedAt: now,
       agentRunId: runId,
       contentType: context.task.contentType,
       assets: imageAssetId ? [imageAssetId] : [],
+      coverImage: imageBase64 ? {
+        base64: imageBase64,
+        prompt: imagePrompt,
+        size: options?.imageSize || '1024x1024',
+        format: 'png' as const,
+        generatedAt: now,
+      } : undefined,
       sources: [{
         type: llmAvailable ? 'agent' : 'manual',
         agentRunId: runId,
