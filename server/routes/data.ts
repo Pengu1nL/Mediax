@@ -3,6 +3,7 @@ import { requireAuth } from '../auth';
 import { loadData, updateData } from '../store';
 import { runAgentTask } from '../agent/runAgentTask';
 import { simulatePublish, exportDraft } from '../publishers/simulatedPublisher';
+import { getImageGenerator } from '../media/imageGen';
 import {
   BrandProfile,
   BrandKnowledgeItem,
@@ -476,6 +477,52 @@ export function createDataRouter(): Router {
         return { data, result: draft };
       });
       res.json(draft);
+    } catch (err: any) {
+      res.status(err.message.includes('未找到') ? 404 : 500).json({ error: err.message });
+    }
+  });
+
+  router.post('/drafts/:draftId/generate-cover', async (req: Request, res: Response) => {
+    try {
+      const { draftId } = req.params;
+      const { prompt, size } = (req.body || {}) as { prompt: string; size?: string };
+
+      const data = await loadData();
+      const imageGen = getImageGenerator(data.config?.imageGen);
+      if (!imageGen) {
+        res.status(400).json({ error: '未配置图片生成服务。' });
+        return;
+      }
+
+      const result = await imageGen.generate({
+        prompt: prompt || 'Generate a cover image',
+        size: size || '1024x1024',
+        n: 1,
+        quality: 'medium',
+      });
+
+      if (!result.images.length || !result.images[0].base64) {
+        res.status(500).json({ error: '图片生成返回空结果。' });
+        return;
+      }
+
+      const coverImage = {
+        base64: result.images[0].base64,
+        prompt: prompt || '',
+        size: size || '1024x1024',
+        format: 'png' as const,
+        generatedAt: new Date().toISOString(),
+      };
+
+      const updated = await updateData((current) => {
+        const draft = current.drafts.find((d) => d.id === draftId);
+        if (!draft) throw new Error('未找到对应的草稿。');
+        draft.coverImage = coverImage;
+        draft.updatedAt = new Date().toISOString();
+        return { data: current, result: draft };
+      });
+
+      res.json(updated);
     } catch (err: any) {
       res.status(err.message.includes('未找到') ? 404 : 500).json({ error: err.message });
     }
