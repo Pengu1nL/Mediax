@@ -73,8 +73,13 @@ export default function TopNavBar() {
           </button>
           <button
             type="button"
-            title="系统设置将在下一阶段上线"
-            className="w-10 h-10 flex items-center justify-center rounded-full text-ink-black/40 cursor-not-allowed"
+            onClick={() => navigate('/settings')}
+            title="系统设置"
+            className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
+              location.pathname === '/settings'
+                ? 'bg-signal-orange/10 text-signal-orange'
+                : 'text-ink-black/40 hover:text-ink-black hover:bg-zinc-100'
+            }`}
           >
             <Settings size={20} />
           </button>

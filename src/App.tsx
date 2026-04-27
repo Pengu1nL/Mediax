@@ -18,6 +18,7 @@ import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
 import PlanDetails from './pages/PlanDetails';
 import Plans from './pages/Plans';
+import Settings from './pages/Settings';
 import TaskDetails from './pages/TaskDetails';
 import AgentRunDetails from './pages/AgentRunDetails';
 
@@ -141,6 +142,7 @@ export default function App({ repositories }: { repositories?: import('./reposit
               <Route path="/agent-runs/:runId" element={<AgentRunDetails />} />
               <Route path="/drafts" element={<Drafts />} />
               <Route path="/drafts/:draftId" element={<DraftEditor />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<ProtectedNotFound />} />
             </Route>
           </Route>

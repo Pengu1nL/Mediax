@@ -86,6 +86,10 @@ function createRepositories(refreshDrafts: Promise<Draft[]>): AppRepositories {
       getAgentRunsByTaskId: vi.fn(async () => []),
       startAgentRun: vi.fn(),
     },
+    config: {
+      getConfig: vi.fn(async () => ({ llm: { provider: '', apiKey: '', baseUrl: '', model: '' }, imageGen: { provider: '', apiKey: '', baseUrl: '', model: '' }, videoGen: { provider: '', apiKey: '', baseUrl: '', model: '' } })),
+      saveConfig: vi.fn(),
+    },
     session: {
       getCurrentUser: vi.fn(async () => user),
       login: vi.fn(async () => user),
@@ -138,6 +142,10 @@ function createLoginRepositories(knowledgeError: Error): AppRepositories {
       getAgentRunById: vi.fn(async () => undefined),
       getAgentRunsByTaskId: vi.fn(async () => []),
       startAgentRun: vi.fn(),
+    },
+    config: {
+      getConfig: vi.fn(async () => ({ llm: { provider: '', apiKey: '', baseUrl: '', model: '' }, imageGen: { provider: '', apiKey: '', baseUrl: '', model: '' }, videoGen: { provider: '', apiKey: '', baseUrl: '', model: '' } })),
+      saveConfig: vi.fn(),
     },
     session: {
       getCurrentUser: vi.fn().mockResolvedValueOnce(null).mockResolvedValue(user),

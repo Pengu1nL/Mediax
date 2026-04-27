@@ -14,11 +14,13 @@ export function createDeepSeekProvider(config: {
 
   return {
     async generate(input: LlmGenerateInput): Promise<string> {
-      const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+      const response = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${config.apiKey}`,
+          'HTTP-Referer': 'http://localhost:3000',
+          'X-Title': 'Mediax',
         },
         body: JSON.stringify({
           model,

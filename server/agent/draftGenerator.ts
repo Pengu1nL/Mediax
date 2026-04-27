@@ -1,4 +1,4 @@
-import type { DraftStatus } from '../../src/types';
+import type { DraftStatus, LlmConfig } from '../../src/types';
 import type { AgentTaskContext } from './types';
 import { getLlmProvider } from '../llm';
 
@@ -111,8 +111,8 @@ function parseLlmOutput(raw: string): ParsedOutput {
  * 如果配置了 LLM（DeepSeek），则调用 API 生成；
  * 否则使用确定性模板作为 fallback。
  */
-export async function createDraftFromTaskContext(context: AgentTaskContext): Promise<CreateDraftInput> {
-  const llm = getLlmProvider();
+export async function createDraftFromTaskContext(context: AgentTaskContext, llmConfig?: LlmConfig): Promise<CreateDraftInput> {
+  const llm = getLlmProvider(llmConfig);
 
   let title: string;
   let content: string;

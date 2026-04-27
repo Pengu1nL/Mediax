@@ -52,6 +52,11 @@ function defaultData(): AppData {
     knowledgeItems: [],
     agentRuns: [],
     publishRecords: [],
+    config: {
+      llm: { provider: 'deepseek', apiKey: '', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+      imageGen: { provider: 'openai', apiKey: '', baseUrl: 'https://api.openai.com/v1', model: 'gpt-image-2' },
+      videoGen: { provider: '', apiKey: '', baseUrl: '', model: '' },
+    },
     plans: [
       { id: 'p1', title: '2024 秋季招生全案宣发', status: 'active', startDate: '2026-09-01', endDate: '2026-10-15', category: '招生季', brandId: 'brand-1', objective: '通过全渠道内容宣发，提升建桥融高在秋季招生季的品牌曝光和生源转化。', audience: '初高中学生家长', channels: ['微信公众号', '小红书', '抖音'], successMetrics: ['公众号阅读量 > 5000', '招生咨询量提升 30%'], automationLevel: 'agent_draft', reviewPolicy: 'manual_required' },
       { id: 'p2', title: '建桥融高一周年校庆策划', status: 'draft', startDate: '2026-01-05', endDate: '2026-01-20', category: '校庆', brandId: 'brand-1', objective: '通过校庆内容传播，强化品牌认知度和社区影响力。', audience: '在校生家长、潜在生源家庭', channels: ['微信公众号', '视频号'], successMetrics: ['校庆活动报名人数 > 200'], automationLevel: 'assistive', reviewPolicy: 'manual_required' },
@@ -76,6 +81,11 @@ function normalizeData(data: AppData): AppData {
     knowledgeItems: data.knowledgeItems ?? [],
     agentRuns: data.agentRuns ?? [],
     publishRecords: data.publishRecords ?? [],
+    config: data.config ?? {
+      llm: { provider: 'deepseek', apiKey: '', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+      imageGen: { provider: 'openai', apiKey: '', baseUrl: 'https://api.openai.com/v1', model: 'gpt-image-2' },
+      videoGen: { provider: '', apiKey: '', baseUrl: '', model: '' },
+    },
   };
 }
 

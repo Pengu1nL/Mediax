@@ -32,6 +32,7 @@ import {
   Plan,
   PlanTask,
   SessionUser,
+  SystemConfig,
 } from '../types';
 
 interface AppSnapshot extends AppData {
@@ -66,6 +67,7 @@ interface AppContextValue extends AppSnapshot {
   createKnowledgeItem: (input: CreateKnowledgeItemInput) => Promise<BrandKnowledgeItem | undefined>;
   deleteKnowledgeItem: (itemId: string) => Promise<void>;
   startAgentRun: (taskId: string) => Promise<AgentRun | undefined>;
+  saveConfig: (config: SystemConfig) => Promise<SystemConfig | undefined>;
   approveDraft: (draftId: string, note?: string) => Promise<Draft | undefined>;
   rejectDraft: (draftId: string, note: string) => Promise<Draft | undefined>;
   requestRegeneration: (draftId: string, note: string) => Promise<Draft | undefined>;
@@ -89,6 +91,7 @@ function createInitialSnapshot(): AppSnapshot {
   return {
     ...seed,
     currentUser: null,
+    config: seed.config,
   };
 }
 
@@ -113,7 +116,7 @@ export function AppProvider({
 
   const refresh = useCallback(async () => {
     try {
-      const [currentUser, brand, assets, plans, planTasks, drafts, agentRuns] = await Promise.all([
+      const [currentUser, brand, assets, plans, planTasks, drafts, agentRuns, config] = await Promise.all([
         session.getCurrentUser(),
         dataRepos.brand.getProfile(),
         dataRepos.assets.getAssets(),
@@ -121,9 +124,10 @@ export function AppProvider({
         dataRepos.plans.getAllTasks(),
         dataRepos.drafts.getDrafts(),
         dataRepos.agentRuns.getAgentRunsByTaskId('__all__').catch(() => [] as AgentRun[]),
+        dataRepos.config.getConfig().catch(() => null),
       ]);
       const knowledgeItems = await dataRepos.knowledge.getKnowledgeItems(brand.id).catch(() => []);
-      setSnapshot({ brand, assets, knowledgeItems, plans, planTasks, drafts, agentRuns, currentUser });
+      setSnapshot({ brand, assets, knowledgeItems, plans, planTasks, drafts, agentRuns, currentUser, config: config! });
       setError(null);
     } catch (nextError) {
       setError(getErrorMessage(nextError));
@@ -194,6 +198,7 @@ export function AppProvider({
       createKnowledgeItem: (input) => runMutation(() => dataRepos.knowledge.createKnowledgeItem(input)),
       deleteKnowledgeItem: (itemId) => runMutation(() => dataRepos.knowledge.deleteKnowledgeItem(itemId)).then(() => undefined),
       startAgentRun: (taskId) => runMutation(() => dataRepos.agentRuns.startAgentRun(taskId)),
+      saveConfig: (config) => runMutation(() => dataRepos.config.saveConfig(config)),
       approveDraft: (draftId, note) => runMutation(() => dataRepos.drafts.approveDraft(draftId, note)),
       rejectDraft: (draftId, note) => runMutation(() => dataRepos.drafts.rejectDraft(draftId, note)),
       requestRegeneration: (draftId, note) => runMutation(() => dataRepos.drafts.requestRegeneration(draftId, note)),

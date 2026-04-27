@@ -77,6 +77,7 @@ function seedData(): AppData {
     drafts: [],
     agentRuns: [],
     publishRecords: [],
+    config: { llm: { provider: '', apiKey: '', baseUrl: '', model: '' }, imageGen: { provider: '', apiKey: '', baseUrl: '', model: '' }, videoGen: { provider: '', apiKey: '', baseUrl: '', model: '' } },
   };
 }
 

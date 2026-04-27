@@ -1,27 +1,17 @@
 import type { LlmProvider } from './types';
+import type { LlmConfig } from '../../src/types';
 import { createDeepSeekProvider } from './deepseek';
 
-let cachedProvider: LlmProvider | null = null;
-
 /**
- * 获取 LLM provider 实例（单例）。
- * 目前仅支持 DeepSeek，后续可扩展其他厂商。
+ * 获取 LLM provider。
+ * 优先级：存储配置 > 环境变量
  */
-export function getLlmProvider(): LlmProvider | null {
-  if (cachedProvider) return cachedProvider;
-
-  const apiKey = process.env.DEEPSEEK_API_KEY?.trim();
+export function getLlmProvider(config?: LlmConfig): LlmProvider | null {
+  const apiKey = config?.apiKey?.trim() || process.env.DEEPSEEK_API_KEY?.trim();
   if (!apiKey) return null;
 
-  const model = process.env.DEEPSEEK_MODEL || 'deepseek-chat';
+  const baseUrl = config?.baseUrl?.trim() || 'https://api.deepseek.com/v1';
+  const model = config?.model?.trim() || process.env.DEEPSEEK_MODEL || 'deepseek-chat';
 
-  cachedProvider = createDeepSeekProvider({ apiKey, model });
-  return cachedProvider;
-}
-
-/**
- * 清除缓存的 provider（测试用）。
- */
-export function clearLlmProviderCache(): void {
-  cachedProvider = null;
+  return createDeepSeekProvider({ apiKey, baseUrl, model });
 }

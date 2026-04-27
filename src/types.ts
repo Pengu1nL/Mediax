@@ -225,6 +225,33 @@ export interface PublishRecord {
   error?: string;
 }
 
+export interface LlmConfig {
+  provider: string;
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+}
+
+export interface ImageGenConfig {
+  provider: string;
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+}
+
+export interface VideoGenConfig {
+  provider: string;
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+}
+
+export interface SystemConfig {
+  llm: LlmConfig;
+  imageGen: ImageGenConfig;
+  videoGen: VideoGenConfig;
+}
+
 export interface AppData {
   brand: BrandProfile;
   assets: Asset[];
@@ -234,4 +261,5 @@ export interface AppData {
   drafts: Draft[];
   agentRuns: AgentRun[];
   publishRecords: PublishRecord[];
+  config: SystemConfig;
 }

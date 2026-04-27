@@ -612,6 +612,30 @@ export function createDataRouter(): Router {
     }
   });
 
+  // ---- Config ----
+
+  router.get('/config', async (_req: Request, res: Response) => {
+    try {
+      const data = await loadData();
+      res.json(data.config);
+    } catch {
+      res.status(500).json({ error: '读取配置失败。' });
+    }
+  });
+
+  router.put('/config', async (req: Request, res: Response) => {
+    try {
+      const input = req.body;
+      const config = await updateData((data) => {
+        data.config = { ...data.config, ...input };
+        return { data, result: data.config };
+      });
+      res.json(config);
+    } catch {
+      res.status(500).json({ error: '保存配置失败。' });
+    }
+  });
+
   // ---- Publish ----
 
   router.post('/drafts/:draftId/publish', async (req: Request, res: Response) => {

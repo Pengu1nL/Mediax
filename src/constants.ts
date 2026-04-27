@@ -1,4 +1,25 @@
-import { AppData, Asset, BrandKnowledgeItem, BrandProfile, Draft, Plan, PlanTask } from './types';
+import { AppData, Asset, BrandKnowledgeItem, BrandProfile, Draft, Plan, PlanTask, SystemConfig } from './types';
+
+export const DEFAULT_CONFIG: SystemConfig = {
+  llm: {
+    provider: 'deepseek',
+    apiKey: '',
+    baseUrl: 'https://api.deepseek.com/v1',
+    model: 'deepseek-chat',
+  },
+  imageGen: {
+    provider: 'openai',
+    apiKey: '',
+    baseUrl: 'https://api.openai.com/v1',
+    model: 'gpt-image-2',
+  },
+  videoGen: {
+    provider: '',
+    apiKey: '',
+    baseUrl: '',
+    model: '',
+  },
+};
 
 export const SEED_ASSETS: Asset[] = [
   {
@@ -244,5 +265,6 @@ export function createSeedAppData(): AppData {
     drafts: structuredClone(SEED_DRAFTS),
     agentRuns: [],
     publishRecords: [],
+    config: structuredClone(DEFAULT_CONFIG),
   };
 }

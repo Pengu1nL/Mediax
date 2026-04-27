@@ -9,6 +9,7 @@ import {
   Plan,
   PlanTask,
   SessionUser,
+  SystemConfig,
 } from '../types';
 import { apiClient } from '../api/client';
 import type {
@@ -81,6 +82,10 @@ export interface ApiDataRepositories {
   plans: ApiPlanRepository;
   drafts: ApiDraftRepository;
   agentRuns: ApiAgentRunRepository;
+  config: {
+    getConfig(): Promise<SystemConfig>;
+    saveConfig(c: SystemConfig): Promise<SystemConfig>;
+  };
 }
 
 export function createApiSessionRepository(): ApiSessionRepository {
@@ -220,6 +225,14 @@ export function createApiDataRepositories(): ApiDataRepositories {
       },
       async startAgentRun(taskId) {
         return apiClient.post<AgentRun>(`/tasks/${taskId}/agent-runs`);
+      },
+    },
+    config: {
+      async getConfig() {
+        return apiClient.get<SystemConfig>('/config');
+      },
+      async saveConfig(changed) {
+        return apiClient.put<SystemConfig>('/config', changed);
       },
     },
   };

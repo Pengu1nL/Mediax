@@ -5,6 +5,7 @@ import {
   AgentRun,
   AgentRunStep,
   PublishRecord,
+  SystemConfig,
   BrandKnowledgeItem,
   BrandProfile,
   Draft,
@@ -141,6 +142,11 @@ export interface AgentRunRepository {
   startAgentRun(taskId: string): Promise<AgentRun>;
 }
 
+export interface ConfigRepository {
+  getConfig(): Promise<SystemConfig>;
+  saveConfig(config: SystemConfig): Promise<SystemConfig>;
+}
+
 export interface SessionRepository {
   getCurrentUser(): Promise<SessionUser | null>;
   login(credentials: LoginCredentials): Promise<SessionUser>;
@@ -154,6 +160,7 @@ export interface AppRepositories {
   plans: PlanRepository;
   drafts: DraftRepository;
   agentRuns: AgentRunRepository;
+  config: ConfigRepository;
   session: SessionRepository;
 }
 
@@ -188,6 +195,11 @@ function normalizeData(data: AppData): AppData {
     knowledgeItems: data.knowledgeItems ?? [],
     agentRuns: data.agentRuns ?? [],
     publishRecords: data.publishRecords ?? [],
+    config: data.config ?? {
+      llm: { provider: 'deepseek', apiKey: '', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+      imageGen: { provider: 'openai', apiKey: '', baseUrl: 'https://api.openai.com/v1', model: 'gpt-image-2' },
+      videoGen: { provider: '', apiKey: '', baseUrl: '', model: '' },
+    },
   };
 }
 
@@ -729,6 +741,17 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
           current.agentRuns.push(agentRun);
 
           return { next: current, result: agentRun };
+        });
+      },
+    },
+    config: {
+      async getConfig() {
+        return clone(store.readData().config);
+      },
+      async saveConfig(config) {
+        return store.updateData((current) => {
+          current.config = clone(config);
+          return { next: current, result: current.config };
         });
       },
     },
