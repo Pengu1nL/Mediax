@@ -91,6 +91,19 @@ export function createDataRouter(): Router {
     }
   });
 
+  router.delete('/knowledge/:itemId', async (req: Request, res: Response) => {
+    try {
+      const { itemId } = req.params;
+      await updateData((data) => {
+        data.knowledgeItems = data.knowledgeItems.filter((k) => k.id !== itemId);
+        return { data, result: undefined };
+      });
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ error: '删除品牌知识失败。' });
+    }
+  });
+
   router.post('/knowledge', async (req: Request, res: Response) => {
     try {
       const input = req.body as CreateKnowledgeItemInput;

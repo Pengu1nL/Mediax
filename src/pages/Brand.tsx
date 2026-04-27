@@ -1,12 +1,20 @@
-import React from 'react';
-import { Camera, Edit3, Globe, Share2, Video } from 'lucide-react';
+import React, { useState } from 'react';
+import { Camera, Edit3, Globe, MoreHorizontal, Share2, Trash2, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import BrandMark from '../components/BrandMark';
 import { useAppStore } from '../context/AppContext';
 import { getBrandProfileCompleteness } from '../utils/brandProfile';
+import type { BrandKnowledgeItem } from '../types';
+
+const KNOWLEDGE_SOURCE_LABEL: Record<string, string> = {
+  asset: '素材',
+  website: '网站',
+  manual_note: '人工录入',
+  historic_content: '历史内容',
+};
 
 export default function Brand() {
-  const { brand, knowledgeItems } = useAppStore();
+  const { brand, knowledgeItems, deleteKnowledgeItem } = useAppStore();
   const completeness = getBrandProfileCompleteness(brand);
 
   return (
@@ -98,7 +106,68 @@ export default function Brand() {
               </button>
             </div>
           </div>
+
+          {/* 品牌知识库 */}
+          <div className="bento-card p-10 space-y-6">
+            <div className="flex justify-between items-center border-b border-zinc-100 pb-6">
+              <h3 className="text-2xl font-bold">品牌知识库</h3>
+              <span className="text-sm font-bold text-zinc-400">{knowledgeItems.length} 条</span>
+            </div>
+            {knowledgeItems.length === 0 ? (
+              <p className="text-sm text-zinc-400 font-medium py-4">暂无知识条目。在素材库中将文件"加入品牌知识"即可。</p>
+            ) : (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {knowledgeItems.map((item) => (
+                  <KnowledgeRow item={item} onDelete={() => deleteKnowledgeItem(item.id)} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function KnowledgeRow({ item, onDelete }: { key?: React.Key; item: BrandKnowledgeItem; onDelete: () => void }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  return (
+    <div className="flex items-start justify-between gap-4 p-4 bg-white rounded-2xl border border-zinc-100">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-black text-ink-black truncate">{item.sourceName}</p>
+        <p className="text-xs font-medium text-slate-gray mt-1 line-clamp-2">{item.summary}</p>
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
+          <span className="px-2 py-0.5 rounded-full bg-zinc-100 text-[10px] font-bold text-zinc-500">
+            {KNOWLEDGE_SOURCE_LABEL[item.sourceType] || item.sourceType}
+          </span>
+          {item.tags.map((tag) => (
+            <span key={tag} className="px-2 py-0.5 rounded-full bg-orange-50 text-[10px] font-bold text-signal-orange">{tag}</span>
+          ))}
+        </div>
+      </div>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setMenuOpen((v) => !v)}
+          onBlur={() => setTimeout(() => setMenuOpen(false), 150)}
+          className="h-8 w-8 rounded-full hover:bg-zinc-100 flex items-center justify-center text-zinc-400 hover:text-ink-black transition-colors"
+          aria-label="知识操作"
+        >
+          <MoreHorizontal size={16} />
+        </button>
+        {menuOpen ? (
+          <div className="absolute right-0 top-full mt-1 bg-white rounded-2xl shadow-xl border border-zinc-100 py-2 min-w-[120px] z-50">
+            <button
+              type="button"
+              onMouseDown={() => { onDelete(); setMenuOpen(false); }}
+              className="w-full text-left px-5 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+            >
+              <Trash2 size={14} />
+              删除
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

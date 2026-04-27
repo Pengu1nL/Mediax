@@ -219,12 +219,16 @@ describe('Library page', () => {
 
     const posterCard = await screen.findByTestId('asset-card-campaign/poster.png');
 
-    await user.click(within(posterCard).getByRole('button', { name: '重命名 poster.png' }));
+    // 打开三点菜单 → 重命名
+    await user.click(within(posterCard).getByRole('button', { name: '素材操作' }));
+    await user.click(within(posterCard).getByText('重命名'));
 
     expect(prompt).toHaveBeenCalledWith('输入新的文件名（会保留原扩展名）', 'poster');
     expect(serviceMocks.renameLocalAsset).toHaveBeenCalledWith(expect.objectContaining({ name: 'poster.png' }), '招生主视觉');
 
-    await user.click(within(posterCard).getByRole('button', { name: '删除 poster.png' }));
+    // 打开三点菜单 → 删除
+    await user.click(within(posterCard).getByRole('button', { name: '素材操作' }));
+    await user.click(within(posterCard).getByText('删除'));
 
     expect(confirm).toHaveBeenCalledWith('删除后会移除本地文件「poster.png」，确认继续吗？');
     expect(serviceMocks.deleteLocalAsset).toHaveBeenCalledWith(expect.objectContaining({ name: 'poster.png' }));
@@ -303,7 +307,9 @@ describe('Library page', () => {
     const campaignFolder = await screen.findByTestId('directory-card-campaign');
     await user.click(within(campaignFolder).getByRole('button', { name: '打开文件夹 campaign' }));
 
-    await user.click(await screen.findByRole('button', { name: '加入品牌知识 poster.png' }));
+    const posterCard = await screen.findByTestId('asset-card-campaign/poster.png');
+    await user.click(within(posterCard).getByRole('button', { name: '素材操作' }));
+    await user.click(within(posterCard).getByText('加入品牌知识'));
 
     expect(appContextMocks.createKnowledgeItem).toHaveBeenCalledWith(expect.objectContaining({
       brandId: 'brand-1',

@@ -39,6 +39,7 @@ export interface ApiAssetRepository {
 export interface ApiKnowledgeRepository {
   getKnowledgeItems(brandId: string): Promise<BrandKnowledgeItem[]>;
   createKnowledgeItem(input: CreateKnowledgeItemInput): Promise<BrandKnowledgeItem>;
+  deleteKnowledgeItem(itemId: string): Promise<void>;
 }
 
 export interface ApiPlanRepository {
@@ -137,6 +138,9 @@ export function createApiDataRepositories(): ApiDataRepositories {
       },
       async createKnowledgeItem(input) {
         return apiClient.post<BrandKnowledgeItem>('/knowledge', input);
+      },
+      async deleteKnowledgeItem(itemId) {
+        await apiClient.delete(`/knowledge/${itemId}`);
       },
     },
     plans: {

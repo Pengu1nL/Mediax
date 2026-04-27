@@ -55,6 +55,7 @@ function createRepositories(refreshDrafts: Promise<Draft[]>): AppRepositories {
     knowledge: {
       getKnowledgeItems: vi.fn(async () => []),
       createKnowledgeItem: vi.fn(),
+      deleteKnowledgeItem: vi.fn(async () => undefined),
     },
     plans: {
       getPlans: vi.fn(async () => []),
@@ -107,6 +108,7 @@ function createLoginRepositories(knowledgeError: Error): AppRepositories {
         throw knowledgeError;
       }),
       createKnowledgeItem: vi.fn(),
+      deleteKnowledgeItem: vi.fn(async () => undefined),
     },
     plans: {
       getPlans: vi.fn(async () => []),

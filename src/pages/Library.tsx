@@ -23,6 +23,7 @@ import { useAppStore } from '../context/AppContext';
 import {
   MAX_ASSET_FILE_SIZE_BYTES,
   SUPPORTED_DOCUMENT_EXTENSIONS,
+  clearRootDirectoryHandle,
   createObjectUrl,
   deleteLocalAsset,
   ensureReadWritePermission,
@@ -250,6 +251,15 @@ export default function Library() {
 
   const handleBindDirectory = async () => {
     try {
+      // 先清理旧目录绑定
+      if (rootHandle) {
+        clearRootDirectoryHandle();
+        setRootHandle(null);
+        setScanResult(null);
+        setSelectedPath('');
+        setSearch('');
+      }
+
       const handle = await pickAssetRootDirectory();
       const allowed = await ensureReadWritePermission(handle);
       if (!allowed) {
@@ -533,8 +543,21 @@ export default function Library() {
     <div className="flex gap-8 min-h-[700px] pb-20">
       <aside className="w-72 flex-shrink-0 space-y-6">
         <div>
-          <div className="text-[10px] font-black uppercase tracking-[0.28em] text-signal-orange">Library</div>
-          <h2 className="text-2xl font-black tracking-tight mt-2">本地目录</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[10px] font-black uppercase tracking-[0.28em] text-signal-orange">Library</div>
+              <h2 className="text-2xl font-black tracking-tight mt-2">本地目录</h2>
+            </div>
+            <button
+              type="button"
+              onClick={handleBindDirectory}
+              className="h-8 w-8 rounded-full bg-zinc-100 text-slate-gray hover:text-ink-black hover:bg-white border border-transparent hover:border-black/10 transition-colors flex items-center justify-center"
+              aria-label="更换目录"
+              title="重新选择本地素材目录"
+            >
+              <RefreshCw size={14} />
+            </button>
+          </div>
         </div>
 
         {scanResult ? (
@@ -893,25 +916,41 @@ function AssetCard({
   onRename: (asset: LocalAssetFile) => void;
   onDelete: (asset: LocalAssetFile) => void;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
-    <article className="group" data-testid={`asset-card-${asset.id}`}>
+    <article className="group relative" data-testid={`asset-card-${asset.id}`}>
+      {/* 三点菜单 — 独立于 overflow-hidden 的卡片容器 */}
+      <div className="absolute top-1 right-1 z-30">
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+          onBlur={() => setTimeout(() => setMenuOpen(false), 150)}
+          className="h-8 w-8 rounded-full bg-white/90 shadow-md text-zinc-500 hover:text-ink-black hover:bg-white transition-all flex items-center justify-center"
+          aria-label="素材操作"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <circle cx="4" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="12" cy="8" r="1.5"/>
+          </svg>
+        </button>
+        {menuOpen ? (
+          <div className="absolute right-0 top-full mt-1 bg-white rounded-2xl shadow-xl border border-zinc-100 py-2 min-w-[160px] z-50">
+            <button type="button" onMouseDown={() => { onPreview(asset); setMenuOpen(false); }} className="w-full text-left px-5 py-2.5 text-sm font-bold text-ink-black hover:bg-zinc-50 transition-colors">预览</button>
+            <button type="button" onMouseDown={() => { onDownload(asset); setMenuOpen(false); }} className="w-full text-left px-5 py-2.5 text-sm font-bold text-ink-black hover:bg-zinc-50 transition-colors">下载</button>
+            <button type="button" onMouseDown={() => { onCreateKnowledge(asset); setMenuOpen(false); }} className="w-full text-left px-5 py-2.5 text-sm font-bold text-ink-black hover:bg-zinc-50 transition-colors">加入品牌知识</button>
+            <button type="button" onMouseDown={() => { onRename(asset); setMenuOpen(false); }} className="w-full text-left px-5 py-2.5 text-sm font-bold text-ink-black hover:bg-zinc-50 transition-colors">重命名</button>
+            <div className="border-t border-zinc-100 my-1" />
+            <button type="button" onMouseDown={() => { onDelete(asset); setMenuOpen(false); }} className="w-full text-left px-5 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors">删除</button>
+          </div>
+        ) : null}
+      </div>
+
       <div className="relative aspect-square rounded-2xl border border-black/5 bg-zinc-50 shadow-sm overflow-hidden mb-3">
         {asset.type === 'image' && imageUrl ? (
           <img src={imageUrl} alt={asset.name} className="absolute inset-0 h-full w-full object-cover" />
         ) : (
           <AssetFallback asset={asset} />
         )}
-        <div className="absolute inset-x-3 bottom-3 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-          <AssetActions
-            asset={asset}
-            compact
-            onPreview={onPreview}
-            onDownload={onDownload}
-            onCreateKnowledge={onCreateKnowledge}
-            onRename={onRename}
-            onDelete={onDelete}
-          />
-        </div>
       </div>
       <div className="min-w-0">
         <p className="text-[13px] font-black text-ink-black truncate">{asset.name}</p>
@@ -984,7 +1023,7 @@ function AssetActions({
   onDelete: (asset: LocalAssetFile) => void;
 }) {
   const buttonClass = compact
-    ? 'h-9 w-9 rounded-full bg-white/95 text-slate-gray shadow-sm hover:text-ink-black transition-colors'
+    ? 'h-10 w-10 rounded-full bg-white/90 text-slate-gray shadow-md hover:text-ink-black hover:bg-white hover:shadow-lg transition-all'
     : 'h-9 w-9 rounded-full bg-zinc-100 text-slate-gray hover:text-ink-black hover:bg-white border border-transparent hover:border-black/5 transition-colors';
 
   return (

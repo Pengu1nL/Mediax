@@ -132,6 +132,7 @@ export interface DraftRepository {
 export interface KnowledgeRepository {
   getKnowledgeItems(brandId: string): Promise<BrandKnowledgeItem[]>;
   createKnowledgeItem(input: CreateKnowledgeItemInput): Promise<BrandKnowledgeItem>;
+  deleteKnowledgeItem(itemId: string): Promise<void>;
 }
 
 export interface AgentRunRepository {
@@ -281,6 +282,12 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
 
           current.knowledgeItems.unshift(item);
           return { next: current, result: item };
+        });
+      },
+      async deleteKnowledgeItem(itemId) {
+        store.updateData((current) => {
+          current.knowledgeItems = current.knowledgeItems.filter((k) => k.id !== itemId);
+          return { next: current, result: undefined };
         });
       },
     },

@@ -64,6 +64,7 @@ interface AppContextValue extends AppSnapshot {
     input: UpdateDraftInput,
   ) => Promise<Draft | undefined>;
   createKnowledgeItem: (input: CreateKnowledgeItemInput) => Promise<BrandKnowledgeItem | undefined>;
+  deleteKnowledgeItem: (itemId: string) => Promise<void>;
   startAgentRun: (taskId: string) => Promise<AgentRun | undefined>;
   approveDraft: (draftId: string, note?: string) => Promise<Draft | undefined>;
   rejectDraft: (draftId: string, note: string) => Promise<Draft | undefined>;
@@ -191,6 +192,7 @@ export function AppProvider({
       createDraft: (input) => runMutation(() => dataRepos.drafts.createDraft(input)),
       updateDraft: (draftId, input) => runMutation(() => dataRepos.drafts.updateDraft(draftId, input)),
       createKnowledgeItem: (input) => runMutation(() => dataRepos.knowledge.createKnowledgeItem(input)),
+      deleteKnowledgeItem: (itemId) => runMutation(() => dataRepos.knowledge.deleteKnowledgeItem(itemId)).then(() => undefined),
       startAgentRun: (taskId) => runMutation(() => dataRepos.agentRuns.startAgentRun(taskId)),
       approveDraft: (draftId, note) => runMutation(() => dataRepos.drafts.approveDraft(draftId, note)),
       rejectDraft: (draftId, note) => runMutation(() => dataRepos.drafts.rejectDraft(draftId, note)),

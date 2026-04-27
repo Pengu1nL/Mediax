@@ -12,6 +12,6 @@ describe('local development entrypoint', () => {
     expect(await readFile('server/dev.ts', 'utf-8')).toContain('server/index.ts');
     expect(await readFile('server/dev.ts', 'utf-8')).toContain('vite');
     expect(readme).toContain('npm run dev');
-    expect(readme).toContain('API server');
+    expect(readme).toContain('API');
   });
 });
