@@ -67,6 +67,7 @@ export interface ApiDraftRepository {
   deleteDraft(draftId: string): Promise<void>;
   publishDraft(draftId: string): Promise<Draft>;
   exportDraft(draftId: string): Promise<unknown>;
+  generateCover(draftId: string, prompt: string, size?: string): Promise<Draft>;
 }
 
 export interface ApiAgentRunRepository {
@@ -214,6 +215,9 @@ export function createApiDataRepositories(): ApiDataRepositories {
       },
       async exportDraft(draftId) {
         return apiClient.post(`/drafts/${draftId}/export`);
+      },
+      async generateCover(draftId, prompt, size) {
+        return apiClient.post<Draft>(`/drafts/${draftId}/generate-cover`, { prompt, size });
       },
     },
     agentRuns: {
