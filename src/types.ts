@@ -135,6 +135,14 @@ export interface DraftSource {
   description: string;
 }
 
+export interface CoverImage {
+  base64: string;
+  prompt: string;
+  size: string;
+  format: string;
+  generatedAt: string;
+}
+
 export interface DraftQualityCheck {
   label: string;
   passed: boolean;
@@ -163,6 +171,7 @@ export interface Draft {
   updatedAt: string;
   agentRunId?: string;
   contentType?: string;
+  coverImage?: CoverImage;
   assets?: string[];
   sources?: DraftSource[];
   qualityChecks?: DraftQualityCheck[];
