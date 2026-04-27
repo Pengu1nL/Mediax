@@ -129,6 +129,16 @@ export default function Drafts() {
                   </div>
                 </div>
 
+                {draft.coverImage ? (
+                  <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-zinc-100">
+                    <img
+                      src={`data:image/${draft.coverImage.format || 'png'};base64,${draft.coverImage.base64}`}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : null}
+
                 <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center min-w-[180px] z-10 border-t md:border-t-0 md:border-l border-zinc-100 pt-6 md:pt-0 md:pl-8 w-full md:w-auto">
                   <div className="text-zinc-400 font-bold text-xs flex items-center gap-2 mb-3">
                     <Clock size={14} />
