@@ -128,6 +128,7 @@ export interface DraftRepository {
   deleteDraft(draftId: string): Promise<void>;
   publishDraft(draftId: string): Promise<Draft>;
   exportDraft(draftId: string): Promise<unknown>;
+  generateCover(draftId: string, prompt: string, size?: string): Promise<Draft>;
 }
 
 export interface KnowledgeRepository {
@@ -653,6 +654,23 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
           };
 
           return { next: current, result: pkg };
+        });
+      },
+      async generateCover(draftId, prompt, size) {
+        return store.updateData((current) => {
+          const draft = current.drafts.find((d) => d.id === draftId);
+          if (!draft) throw new Error('未找到对应的草稿。');
+          // Placeholder 1x1 grey pixel PNG in base64
+          const PLACEHOLDER_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+          draft.coverImage = {
+            base64: PLACEHOLDER_PNG,
+            prompt: prompt || 'Generated cover image',
+            size: size || '1024x1024',
+            format: 'png',
+            generatedAt: new Date().toISOString(),
+          };
+          draft.updatedAt = new Date().toISOString();
+          return { next: current, result: draft };
         });
       },
     },
