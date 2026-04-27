@@ -73,7 +73,7 @@ export interface ApiDraftRepository {
 export interface ApiAgentRunRepository {
   getAgentRunById(runId: string): Promise<AgentRun | undefined>;
   getAgentRunsByTaskId(taskId: string): Promise<AgentRun[]>;
-  startAgentRun(taskId: string): Promise<AgentRun>;
+  startAgentRun(taskId: string, options?: { generateImage?: boolean; imageSize?: string }): Promise<AgentRun>;
 }
 
 export interface ApiDataRepositories {
@@ -227,8 +227,8 @@ export function createApiDataRepositories(): ApiDataRepositories {
       async getAgentRunsByTaskId(taskId) {
         return apiClient.get<AgentRun[]>(`/agent-runs?taskId=${encodeURIComponent(taskId)}`).catch(() => []);
       },
-      async startAgentRun(taskId) {
-        return apiClient.post<AgentRun>(`/tasks/${taskId}/agent-runs`);
+      async startAgentRun(taskId, options) {
+        return apiClient.post<AgentRun>(`/tasks/${taskId}/agent-runs`, options);
       },
     },
     config: {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Calendar, CheckCircle2, FileText, Globe, Layers, Play, ShieldCheck, Tag } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { NotFoundState } from '../components/PageState';
+import RunAgentDialog from '../components/RunAgentDialog';
 import { useAppStore } from '../context/AppContext';
 import { AgentTaskStatus } from '../types';
 import { executionTypeLabel, taskStatusLabel, statusPillClass } from '../utils/presentation';
@@ -20,6 +21,7 @@ export default function TaskDetails() {
   const { planId, taskId } = useParams();
   const { plans, planTasks, drafts, startAgentRun } = useAppStore();
   const [agentLoading, setAgentLoading] = useState(false);
+  const [showAgentDialog, setShowAgentDialog] = useState(false);
 
   const plan = plans.find((p) => p.id === planId);
   const task = planTasks.find((t) => t.id === taskId && t.planId === planId);
@@ -38,11 +40,16 @@ export default function TaskDetails() {
 
   const taskReady = isTaskReadyForAgent(task.brief, task.channel, task.contentType, task.reviewPolicy);
 
-  const handleStartAgent = async () => {
+  const handleStartAgent = () => {
     if (!taskReady || agentLoading) return;
+    setShowAgentDialog(true);
+  };
+
+  const handleConfirmRun = async (options: { generateImage: boolean; imageSize?: string }) => {
+    setShowAgentDialog(false);
     setAgentLoading(true);
     try {
-      const run = await startAgentRun(task.id);
+      const run = await startAgentRun(task.id, options);
       if (run) {
         navigate(`/agent-runs/${run.id}`);
       }
@@ -219,6 +226,13 @@ export default function TaskDetails() {
             ))}
           </div>
         </section>
+      ) : null}
+      {showAgentDialog ? (
+        <RunAgentDialog
+          task={task}
+          onConfirm={handleConfirmRun}
+          onCancel={() => setShowAgentDialog(false)}
+        />
       ) : null}
     </div>
   );

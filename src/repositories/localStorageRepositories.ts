@@ -139,7 +139,7 @@ export interface KnowledgeRepository {
 export interface AgentRunRepository {
   getAgentRunById(runId: string): Promise<AgentRun | undefined>;
   getAgentRunsByTaskId(taskId: string): Promise<AgentRun[]>;
-  startAgentRun(taskId: string): Promise<AgentRun>;
+  startAgentRun(taskId: string, options?: { generateImage?: boolean; imageSize?: string }): Promise<AgentRun>;
 }
 
 export interface ConfigRepository {
@@ -663,7 +663,7 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
       async getAgentRunsByTaskId(taskId) {
         return clone(store.readData().agentRuns.filter((run) => run.taskId === taskId));
       },
-      async startAgentRun(taskId) {
+      async startAgentRun(taskId, _options?) {
         return store.updateData((current) => {
           const task = current.planTasks.find((t) => t.id === taskId);
           if (!task) throw new Error('未找到对应的任务。');
