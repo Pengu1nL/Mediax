@@ -17,7 +17,7 @@ const REVIEW_STATUS_LABEL: Record<string, string> = {
 export default function DraftEditor() {
   const navigate = useNavigate();
   const { draftId } = useParams();
-  const { drafts, plans, planTasks, agentRuns, updateDraft, approveDraft, rejectDraft, requestRegeneration, deleteDraft, publishDraft, exportDraft } = useAppStore();
+  const { drafts, plans, planTasks, agentRuns, updateDraft, approveDraft, rejectDraft, requestRegeneration, deleteDraft, publishDraft, exportDraft, generateCover } = useAppStore();
   const [title, setTitle] = useState('');
   const [platform, setPlatform] = useState('');
   const [group, setGroup] = useState('');
@@ -27,6 +27,9 @@ export default function DraftEditor() {
   const [notice, setNotice] = useState('');
   const [reviewNote, setReviewNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showRegenDialog, setShowRegenDialog] = useState(false);
+  const [regenPrompt, setRegenPrompt] = useState('');
+  const [regenSize, setRegenSize] = useState('');
 
   const draft = drafts.find((item) => item.id === draftId);
   const plan = draft?.planId ? plans.find((item) => item.id === draft.planId) : null;
@@ -141,6 +144,20 @@ export default function DraftEditor() {
       link.click();
       URL.revokeObjectURL(url);
       setNotice(`已导出发布包${record?.id ? `（发布记录 ${record.id}）` : ''}，同时已下载 JSON 文件。`);
+    }
+  };
+
+  const handleRegenerateCover = async () => {
+    setSaving(true);
+    const result = await generateCover(
+      draft.id,
+      regenPrompt || draft.coverImage?.prompt || '',
+      regenSize || draft.coverImage?.size || '1024x1024',
+    );
+    setSaving(false);
+    if (result) {
+      setNotice('配图已重新生成。');
+      setShowRegenDialog(false);
     }
   };
 
@@ -324,6 +341,38 @@ export default function DraftEditor() {
             </div>
           )}
 
+          {/* Cover Image Preview */}
+          {draft.coverImage ? (
+            <div className="bento-card p-8">
+              <div className="text-[10px] font-black uppercase tracking-[0.35em] text-zinc-400">配图预览</div>
+              <div className="mt-4">
+                <img
+                  src={`data:image/${draft.coverImage.format || 'png'};base64,${draft.coverImage.base64}`}
+                  alt="Cover"
+                  className="w-full rounded-2xl border border-zinc-100"
+                />
+                <div className="mt-3 space-y-1">
+                  <p className="text-xs font-medium text-zinc-400">
+                    尺寸：{draft.coverImage.size} | 生成时间：{formatRelativeTimestamp(draft.coverImage.generatedAt)}
+                  </p>
+                  <p className="text-xs text-zinc-400 line-clamp-2">Prompt: {draft.coverImage.prompt}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRegenPrompt(draft.coverImage?.prompt || '');
+                    setRegenSize(draft.coverImage?.size || '1024x1024');
+                    setShowRegenDialog(true);
+                  }}
+                  className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold text-sm bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-colors"
+                >
+                  <RotateCcw size={14} />
+                  重新生成配图
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           {/* Review Panel */}
           <div className="bento-card p-8 border-2 border-zinc-200">
             <div className="text-[10px] font-black uppercase tracking-[0.35em] text-zinc-400">审核操作</div>
@@ -427,6 +476,54 @@ export default function DraftEditor() {
           </div>
         </div>
       </section>
+
+      {showRegenDialog ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-ink-black/40 backdrop-blur-sm" onClick={() => setShowRegenDialog(false)} />
+          <div className="relative bg-white rounded-[32px] p-8 max-w-lg w-full mx-4 shadow-2xl">
+            <h2 className="text-xl font-black text-ink-black mb-6">重新生成配图</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-black uppercase tracking-widest text-zinc-400">图片 Prompt</label>
+                <textarea
+                  rows={3}
+                  value={regenPrompt}
+                  onChange={(e) => setRegenPrompt(e.target.value)}
+                  className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-3 font-medium text-sm resize-none mt-2"
+                  placeholder={draft.coverImage?.prompt || '描述你想要的配图...'}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-black uppercase tracking-widest text-zinc-400">尺寸 (WxH)</label>
+                <input
+                  type="text"
+                  value={regenSize}
+                  onChange={(e) => setRegenSize(e.target.value)}
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 font-bold text-sm mt-2"
+                  placeholder={draft.coverImage?.size || '1024x1024'}
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowRegenDialog(false)}
+                className="flex-1 px-4 py-3 rounded-2xl font-bold border-2 border-zinc-200"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={handleRegenerateCover}
+                disabled={saving}
+                className="flex-1 px-4 py-3 rounded-2xl font-bold bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
+              >
+                {saving ? '生成中...' : '开始生成'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
