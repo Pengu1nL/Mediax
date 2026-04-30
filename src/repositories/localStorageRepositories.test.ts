@@ -15,7 +15,7 @@ describe('localStorage repositories', () => {
     const repositories = createLocalStorageRepositories(window.localStorage);
 
     const originalBrand = await repositories.brand.getProfile();
-    expect(originalBrand.name).toBe('上海建桥融高');
+    expect(originalBrand.name).toBe('Mediax');
     expect(originalBrand.defaultReviewPolicy).toBe('manual_required');
     expect(originalBrand.setupComplete).toBe(false);
 

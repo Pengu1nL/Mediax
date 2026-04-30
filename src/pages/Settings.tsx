@@ -33,12 +33,25 @@ function LlmForm({ value, onChange }: { value: LlmConfig; onChange: (v: LlmConfi
   );
 }
 
+const IMAGE_GEN_PROVIDER_DEFAULTS: Record<string, { baseUrl: string; model: string }> = {
+  openai: { baseUrl: 'https://api.openai.com/v1', model: 'dall-e-3' },
+  openrouter: { baseUrl: 'https://openrouter.ai/api/v1', model: 'gpt-image-2' },
+};
+
 function ImageForm({ value, onChange }: { value: ImageGenConfig; onChange: (v: ImageGenConfig) => void }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="Provider">
-          <select value={value.provider} onChange={(e) => onChange({ ...value, provider: e.target.value })} className="input">
+          <select value={value.provider} onChange={(e) => {
+            const provider = e.target.value;
+            const defaults = IMAGE_GEN_PROVIDER_DEFAULTS[provider];
+            onChange({
+              ...value,
+              provider,
+              ...(defaults ? { baseUrl: defaults.baseUrl, model: defaults.model } : {}),
+            });
+          }} className="input">
             <option value="">未配置</option>
             <option value="openai">OpenAI</option>
             <option value="openrouter">OpenRouter</option>

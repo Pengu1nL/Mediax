@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Request, Response } from 'express';
 import type { AppData } from '../../src/types';
+import type { LlmProvider, LlmGenerateInput } from '../llm/types';
 import { createDataRouter } from './data';
 
 const storeMocks = vi.hoisted(() => ({
@@ -8,9 +9,17 @@ const storeMocks = vi.hoisted(() => ({
   updateData: vi.fn(),
 }));
 
+const llmMocks = vi.hoisted(() => ({
+  getLlmProvider: vi.fn(),
+}));
+
 vi.mock('../store', () => ({
   loadData: storeMocks.loadData,
   updateData: storeMocks.updateData,
+}));
+
+vi.mock('../llm', () => ({
+  getLlmProvider: llmMocks.getLlmProvider,
 }));
 
 function dataWithDraft(): AppData {
@@ -259,4 +268,86 @@ describe('data API routes', () => {
       }),
     ]);
   });
+
+  describe('POST /brand/suggest', () => {
+    it('returns 400 if field or current is missing', async () => {
+      const noField = await invokeRoute('post', '/brand/suggest', {
+        body: { current: 'some text' },
+      });
+      expect(noField.statusCode).toBe(400);
+
+      const noCurrent = await invokeRoute('post', '/brand/suggest', {
+        body: { field: 'summary' },
+      });
+      expect(noCurrent.statusCode).toBe(400);
+    });
+
+    it('returns 400 if LLM provider is not configured', async () => {
+      (llmMocks.getLlmProvider as ReturnType<typeof vi.fn>).mockReturnValue(null);
+
+      const res = await invokeRoute('post', '/brand/suggest', {
+        body: { field: 'summary', current: '我们需要优化这段文字' },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toMatchObject({ error: expect.stringContaining('AI') });
+    });
+
+    it('optimizes field content with brand context', async () => {
+      const mockLlm: LlmProvider = {
+        generate: vi.fn(async (_input: LlmGenerateInput) =>
+          JSON.stringify({ summary: '优化后的品牌简介：我们致力于通过科技创新推动行业进步。' }),
+        ),
+      };
+      (llmMocks.getLlmProvider as ReturnType<typeof vi.fn>).mockReturnValue(mockLlm);
+
+      const res = await invokeRoute('post', '/brand/suggest', {
+        body: {
+          field: 'summary',
+          current: '我们做科技',
+          name: '测试品牌',
+          industry: '科技与软件',
+        },
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toMatchObject({
+        summary: expect.stringContaining('优化'),
+      });
+      expect(mockLlm.generate).toHaveBeenCalledTimes(1);
+    });
+
+    it('works without brand name/industry context', async () => {
+      const mockLlm: LlmProvider = {
+        generate: vi.fn(async (_input: LlmGenerateInput) =>
+          JSON.stringify({ audience: '大学生和年轻职场人群' }),
+        ),
+      };
+      (llmMocks.getLlmProvider as ReturnType<typeof vi.fn>).mockReturnValue(mockLlm);
+
+      const res = await invokeRoute('post', '/brand/suggest', {
+        body: { field: 'audience', current: '年轻人' },
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toMatchObject({
+        audience: '大学生和年轻职场人群',
+      });
+    });
+
+    it('returns 500 when LLM call fails', async () => {
+      const mockLlm: LlmProvider = {
+        generate: vi.fn(async (_input: LlmGenerateInput) => {
+          throw new Error('LLM API timeout');
+        }),
+      };
+      (llmMocks.getLlmProvider as ReturnType<typeof vi.fn>).mockReturnValue(mockLlm);
+
+      const res = await invokeRoute('post', '/brand/suggest', {
+        body: { field: 'summary', current: 'test' },
+      });
+
+      expect(res.statusCode).toBe(500);
+    });
+  });
+
 });

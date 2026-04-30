@@ -92,24 +92,22 @@ export const SEED_KNOWLEDGE_ITEMS: BrandKnowledgeItem[] = [];
 
 export const SEED_BRAND_PROFILE: BrandProfile = {
   id: 'brand-1',
-  name: '上海建桥融高',
-  industry: '教育 / 民办高中',
-  website: 'http://www.jianqiaosh.com',
-  establishedAt: '2022年',
-  keywords: ['融合教育', '国际视野', '临港', '民办高中'],
+  name: 'Mediax',
+  industry: '媒体与出版',
+  keywords: ['AI 内容创作', '自媒体运营', 'Agent 驱动', '多平台发布'],
   summary:
-    '上海建桥融高是一所位于上海市临港的民办高中，致力于融合世界先进教育理念，培养具有家国情怀、国际视野、身心健康、学业优异的复合型人才。',
-  audience: '关注融合教育和国际化升学路径的学生家庭',
-  positioning: '临港区域融合教育品牌',
-  toneOfVoice: '专业、可信、温暖、有教育理想',
-  doAndDonts: ['避免制造升学焦虑', '避免未经证实的升学承诺'],
+    'Mediax 是一个 AI Agent 驱动的全自动自媒体运营平台，帮助内容创作者从重复劳动中解放，专注于创意和策略。',
+  audience: '内容创作者、自媒体运营者、品牌营销人员',
+  positioning: 'AI 驱动的一站式自媒体运营平台',
+  toneOfVoice: '专业、简洁、有洞察力',
+  doAndDonts: ['夸大宣传', '过度承诺', '标题党', '信息焦虑'],
   defaultReviewPolicy: 'manual_required',
   setupComplete: false,
   channels: [
-    { id: 'c1', name: '微信公众号', handle: '@建桥融高', kind: 'wechat', active: true },
-    { id: 'c2', name: '小红书', handle: '@建桥融高', kind: 'xiaohongshu', active: true },
-    { id: 'c3', name: '抖音', handle: '@建桥融高', kind: 'douyin', active: true },
-    { id: 'c4', name: '视频号', handle: '@建桥融高Plus', kind: 'video', active: true },
+    { id: 'c1', name: '微信公众号', handle: '@Mediax', kind: 'wechat', active: true },
+    { id: 'c2', name: '小红书', handle: '@Mediax', kind: 'xiaohongshu', active: true },
+    { id: 'c3', name: '抖音', handle: '@Mediax', kind: 'douyin', active: true },
+    { id: 'c4', name: '视频号', handle: '@Mediax', kind: 'video', active: true },
   ],
 };
 

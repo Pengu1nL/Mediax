@@ -89,15 +89,29 @@ describe('App routing', () => {
     await user.type(screen.getByLabelText('密码'), 'mediax2026');
     await user.click(screen.getByRole('button', { name: '登录并继续' }));
 
+    // Step 1: fill brand name and industry
     const brandNameInput = await screen.findByLabelText('品牌名称');
     await user.click(brandNameInput);
     await user.keyboard('{Control>}a{/Control}{Backspace}');
     await user.type(brandNameInput, '建桥融高');
     expect(brandNameInput).toHaveValue('建桥融高');
     await user.selectOptions(screen.getByLabelText('所属行业'), '教育 / 民办高中');
+
+    // Navigate to step 2
+    await user.click(screen.getByRole('button', { name: /下一步/ }));
+
+    // Step 2: fill brand voice fields
+    expect(await screen.findByLabelText('品牌简介')).toBeInTheDocument();
+    await user.type(screen.getByLabelText('品牌简介'), '专注于融合教育领域的品牌');
     await user.type(screen.getByLabelText('目标受众'), '关注融合教育的学生家庭');
     await user.type(screen.getByLabelText('品牌语气'), '专业、温暖、可信');
     await user.type(screen.getByLabelText('禁用表达'), '不夸大升学结果, 不制造焦虑');
+
+    // Navigate to step 3
+    await user.click(screen.getByRole('button', { name: /下一步/ }));
+
+    // Step 3: submit
+    expect(await screen.findByText('必须人工审核')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /保存并进入品牌页/ }));
 
     expect(await screen.findByRole('heading', { name: '建桥融高' })).toBeInTheDocument();
@@ -142,7 +156,7 @@ describe('App routing', () => {
     await user.click(screen.getByRole('button', { name: '登录并继续' }));
 
     expect(await screen.findByRole('heading', { name: '行业新闻' })).toBeInTheDocument();
-    expect(screen.getByText('教育 / 民办高中')).toBeInTheDocument();
+    expect(screen.getByText('媒体与出版')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '内容生产热力' })).not.toBeInTheDocument();
   });
 

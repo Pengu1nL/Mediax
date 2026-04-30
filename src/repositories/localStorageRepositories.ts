@@ -95,9 +95,26 @@ export interface CreateKnowledgeItemInput {
   confidence: number;
 }
 
+export interface BrandSuggestInput {
+  field: string;
+  current: string;
+  name?: string;
+  industry?: string;
+}
+
+export interface BrandSuggestResult {
+  summary?: string;
+  toneOfVoice?: string;
+  audience?: string;
+  positioning?: string;
+  doAndDonts?: string;
+  keywords?: string;
+}
+
 export interface BrandRepository {
   getProfile(): Promise<BrandProfile>;
   saveProfile(profile: BrandProfile): Promise<BrandProfile>;
+  suggestFields?(input: BrandSuggestInput): Promise<BrandSuggestResult | null>;
 }
 
 export interface AssetRepository {

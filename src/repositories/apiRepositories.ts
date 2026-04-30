@@ -28,9 +28,26 @@ export interface ApiSessionRepository {
   logout(): Promise<void>;
 }
 
+export interface BrandSuggestInput {
+  field: string;
+  current: string;
+  name?: string;
+  industry?: string;
+}
+
+export interface BrandSuggestResult {
+  summary?: string;
+  toneOfVoice?: string;
+  audience?: string;
+  positioning?: string;
+  doAndDonts?: string;
+  keywords?: string;
+}
+
 export interface ApiBrandRepository {
   getProfile(): Promise<BrandProfile>;
   saveProfile(profile: BrandProfile): Promise<BrandProfile>;
+  suggestFields(input: BrandSuggestInput): Promise<BrandSuggestResult>;
 }
 
 export interface ApiAssetRepository {
@@ -130,6 +147,9 @@ export function createApiDataRepositories(): ApiDataRepositories {
       },
       async saveProfile(profile) {
         return apiClient.put<BrandProfile>('/brand', profile);
+      },
+      async suggestFields(input) {
+        return apiClient.post<BrandSuggestResult>('/brand/suggest', input);
       },
     },
     assets: {

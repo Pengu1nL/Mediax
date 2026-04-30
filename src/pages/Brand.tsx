@@ -21,8 +21,8 @@ export default function Brand() {
     <div className="relative pb-20">
       <div className="absolute top-[20%] left-[-10%] w-[600px] h-[600px] border border-signal-orange/10 rounded-full pointer-events-none -z-10" />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start mt-12">
-        <div className="lg:col-span-5 flex flex-col items-center lg:items-start relative">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-start mt-12">
+        <div className="flex flex-col items-center lg:items-start relative">
           <div className="hidden lg:block absolute -top-8 -left-8 text-[120px] font-black text-zinc-100/50 pointer-events-none uppercase -z-10 tracking-widest">
             MEDIAX
           </div>
@@ -45,7 +45,7 @@ export default function Brand() {
           </div>
         </div>
 
-        <div className="lg:col-span-7 space-y-10">
+        <div className="space-y-10">
           <div className="bento-card p-10 space-y-8">
             <div className="flex justify-between items-center border-b border-zinc-100 pb-6">
               <h3 className="text-2xl font-bold">品牌档案</h3>
@@ -63,47 +63,85 @@ export default function Brand() {
                 <p className="text-lg font-black text-ink-black">{knowledgeItems.length}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">成立时间</p>
-                <p className="text-lg font-black text-ink-black">{brand.establishedAt || '待补充'}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">审核策略</p>
+                <p className="text-lg font-black text-ink-black">
+                  {brand.defaultReviewPolicy === 'manual_required' ? '必须人工审核' : brand.defaultReviewPolicy === 'auto_if_low_risk' ? '低风险自动通过' : '自动发布'}
+                </p>
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">核心关键词</p>
-                <p className="text-lg font-black text-ink-black">{brand.keywords.join(' / ')}</p>
+                <p className="text-lg font-black text-ink-black">{brand.keywords.length ? brand.keywords.join(' / ') : '—'}</p>
               </div>
               <div className="md:col-span-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">官方网站</p>
-                <a
-                  href={brand.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-lg font-bold text-blue-600 hover:underline flex items-center gap-2"
-                >
-                  <Globe size={18} />
-                  {brand.website?.replace(/^https?:\/\//, '') || '待补充'}
-                </a>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">品牌语气</p>
+                <p className="text-lg font-bold text-ink-black">{brand.toneOfVoice || '—'}</p>
+              </div>
+              <div className="md:col-span-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">目标受众</p>
+                <p className="text-lg font-bold text-ink-black">{brand.audience || '—'}</p>
+              </div>
+              <div className="md:col-span-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">品牌定位</p>
+                <p className="text-lg font-bold text-ink-black">{brand.positioning || '—'}</p>
+              </div>
+              <div className="md:col-span-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">禁用表达</p>
+                <p className="text-lg font-bold text-ink-black">{brand.doAndDonts?.length ? brand.doAndDonts.join('、') : '—'}</p>
               </div>
             </div>
           </div>
 
-          <div className="bento-card p-10 space-y-8 bg-lifted-cream">
-            <h3 className="text-2xl font-bold">关联账号</h3>
-            <div className="space-y-4">
-              {brand.channels.map((channel) => (
-                <AccountRow
-                  key={channel.id}
-                  icon={channel.kind === 'wechat' ? <Share2 size={20} /> : channel.kind === 'xiaohongshu' ? <Camera size={20} /> : <Video size={20} />}
-                  name={channel.name}
-                  handle={channel.handle}
-                  active={channel.active}
-                />
-              ))}
-              <button
-                type="button"
-                title="新账号绑定将在真实平台集成后上线"
-                className="w-full py-6 border-2 border-dashed border-zinc-200 rounded-2xl flex items-center justify-center gap-3 text-zinc-400 cursor-not-allowed font-bold"
-              >
-                账号绑定即将上线
-              </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mt-16">
+          <div className="bento-card p-10 space-y-8">
+            <div className="flex justify-between items-center border-b border-zinc-100 pb-6">
+              <h3 className="text-2xl font-bold">网站 & 平台</h3>
+              <Link to="/onboarding" className="text-signal-orange text-sm font-bold hover:underline">
+                更新资料
+              </Link>
+            </div>
+            <div className="space-y-6">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-3">官方网站</p>
+                {brand.website ? (
+                  <a
+                    href={brand.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-lg font-bold text-blue-600 hover:underline flex items-center gap-2"
+                  >
+                    <Globe size={18} />
+                    {brand.website.replace(/^https?:\/\//, '')}
+                  </a>
+                ) : (
+                  <p className="text-sm text-zinc-400 font-medium">未配置</p>
+                )}
+              </div>
+              <div className="border-t border-zinc-100 pt-6">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-3">关联平台</p>
+                {(brand.channels?.length ?? 0) > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {brand.channels!.map((channel) => (
+                      <div
+                        key={channel.id}
+                        className="flex items-center gap-3 p-4 bg-zinc-50 rounded-2xl border border-zinc-100"
+                      >
+                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-ink-black">
+                          {channel.kind === 'wechat' ? <Share2 size={18} /> : channel.kind === 'xiaohongshu' ? <Camera size={18} /> : <Video size={18} />}
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-ink-black">{channel.name}</p>
+                          <p className="text-xs font-bold text-zinc-400">{channel.handle}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-zinc-400 font-medium">暂无关联平台</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -123,7 +161,6 @@ export default function Brand() {
               </div>
             )}
           </div>
-        </div>
       </div>
     </div>
   );
@@ -173,30 +210,3 @@ function KnowledgeRow({ item, onDelete }: { key?: React.Key; item: BrandKnowledg
   );
 }
 
-function AccountRow({
-  icon,
-  name,
-  handle,
-  active,
-}: {
-  key?: React.Key;
-  icon: React.ReactNode;
-  name: string;
-  handle: string;
-  active: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between p-5 bg-white rounded-2xl border border-zinc-100 shadow-sm">
-      <div className="flex items-center gap-5">
-        <div className="w-12 h-12 bg-zinc-50 rounded-full flex items-center justify-center text-ink-black">{icon}</div>
-        <div>
-          <p className="font-black text-ink-black">{name}</p>
-          <p className="text-sm font-bold text-zinc-400">{handle}</p>
-        </div>
-      </div>
-      <span className="px-4 py-1.5 bg-zinc-100 rounded-full text-[10px] font-black uppercase tracking-widest text-ink-black">
-        {active ? '已绑定' : '待接入'}
-      </span>
-    </div>
-  );
-}

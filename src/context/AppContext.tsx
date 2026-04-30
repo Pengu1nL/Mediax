@@ -10,6 +10,8 @@ import { createSeedAppData } from '../constants';
 import {
   createLocalStorageRepositories,
   type AppRepositories,
+  type BrandSuggestInput,
+  type BrandSuggestResult,
   type CreateDraftInput,
   type CreateKnowledgeItemInput,
   type CreatePlanInput,
@@ -75,6 +77,7 @@ interface AppContextValue extends AppSnapshot {
   publishDraft: (draftId: string) => Promise<Draft | undefined>;
   exportDraft: (draftId: string) => Promise<unknown>;
   generateCover: (draftId: string, prompt: string, size?: string) => Promise<Draft | undefined>;
+  suggestBrandFields: (input: BrandSuggestInput) => Promise<BrandSuggestResult | null>;
 }
 
 const seed = createSeedAppData();
@@ -187,6 +190,14 @@ export function AppProvider({
         await refresh();
       },
       saveBrandProfile: (profile) => runMutation(() => dataRepos.brand.saveProfile(profile)),
+      suggestBrandFields: async (input) => {
+        if (!dataRepos.brand.suggestFields) return null;
+        try {
+          return await dataRepos.brand.suggestFields(input);
+        } catch {
+          return null;
+        }
+      },
       createPlan: (input) => runMutation(() => dataRepos.plans.createPlan(input)),
       updatePlan: (planId, input) => runMutation(() => dataRepos.plans.updatePlan(planId, input)),
       deletePlan: (planId) => runMutation(() => dataRepos.plans.deletePlan(planId)),
