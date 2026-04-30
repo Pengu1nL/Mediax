@@ -1,4 +1,5 @@
 import type { ImageGenConfig } from '../../src/types';
+import { getProxyDispatcher } from '../fetchProxy';
 
 interface ImageGenInput {
   prompt: string;
@@ -22,6 +23,7 @@ function createImageGenerator(config: { apiKey: string; baseUrl: string; model: 
           'Content-Type': 'application/json',
           Authorization: `Bearer ${config.apiKey}`,
         },
+        ...getProxyDispatcher(),
         body: JSON.stringify({
           model: config.model,
           prompt: input.prompt,

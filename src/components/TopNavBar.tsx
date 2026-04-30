@@ -15,7 +15,9 @@ const navItems = [
 export default function TopNavBar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentUser, logout } = useAppStore();
+  const { configStatus, currentUser, logout } = useAppStore();
+
+  const llmConfigured = configStatus?.llm?.configured ?? false;
 
   return (
     <nav className="w-[95%] max-w-[1400px] mx-auto mt-6 flex justify-between items-center px-8 py-3 glass-nav rounded-full">
@@ -74,14 +76,17 @@ export default function TopNavBar() {
           <button
             type="button"
             onClick={() => navigate('/settings')}
-            title="系统设置"
-            className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-full transition-colors ${
               location.pathname === '/settings'
                 ? 'bg-signal-orange/10 text-signal-orange'
-                : 'text-ink-black/40 hover:text-ink-black hover:bg-zinc-100'
+                : 'text-ink-black/60 hover:text-ink-black hover:bg-zinc-100'
             }`}
           >
-            <Settings size={20} />
+            <Settings size={18} />
+            <span className="text-sm font-bold">设置</span>
+            {!llmConfigured ? (
+              <span className="w-2 h-2 bg-signal-orange rounded-full" title="LLM 未配置" />
+            ) : null}
           </button>
         </div>
         <div className="hidden md:flex flex-col items-end">

@@ -214,7 +214,7 @@ function normalizeData(data: AppData): AppData {
     agentRuns: data.agentRuns ?? [],
     publishRecords: data.publishRecords ?? [],
     config: data.config ?? {
-      llm: { provider: 'deepseek', apiKey: '', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+      llm: { provider: 'deepseek', apiKey: '', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-v4-pro' },
       imageGen: { provider: 'openai', apiKey: '', baseUrl: 'https://api.openai.com/v1', model: 'gpt-image-2' },
       videoGen: { provider: '', apiKey: '', baseUrl: '', model: '' },
     },

@@ -29,6 +29,7 @@ import {
   AppData,
   BrandKnowledgeItem,
   BrandProfile,
+  ConfigStatus,
   Draft,
   LoginCredentials,
   Plan,
@@ -39,6 +40,7 @@ import {
 
 interface AppSnapshot extends AppData {
   currentUser: SessionUser | null;
+  configStatus: ConfigStatus | null;
 }
 
 interface AppContextValue extends AppSnapshot {
@@ -96,6 +98,7 @@ function createInitialSnapshot(): AppSnapshot {
     ...seed,
     currentUser: null,
     config: seed.config,
+    configStatus: null,
   };
 }
 
@@ -120,7 +123,7 @@ export function AppProvider({
 
   const refresh = useCallback(async () => {
     try {
-      const [currentUser, brand, assets, plans, planTasks, drafts, agentRuns, config] = await Promise.all([
+      const [currentUser, brand, assets, plans, planTasks, drafts, agentRuns, config, configStatus] = await Promise.all([
         session.getCurrentUser(),
         dataRepos.brand.getProfile(),
         dataRepos.assets.getAssets(),
@@ -129,9 +132,10 @@ export function AppProvider({
         dataRepos.drafts.getDrafts(),
         dataRepos.agentRuns.getAgentRunsByTaskId('__all__').catch(() => [] as AgentRun[]),
         dataRepos.config.getConfig().catch(() => null),
+        fetch('/api/config/status').then(r => r.json()).then(d => (d?.llm ? d : null)).catch(() => null),
       ]);
       const knowledgeItems = await dataRepos.knowledge.getKnowledgeItems(brand.id).catch(() => []);
-      setSnapshot({ brand, assets, knowledgeItems, plans, planTasks, drafts, agentRuns, currentUser, config: config! });
+      setSnapshot({ brand, assets, knowledgeItems, plans, planTasks, drafts, agentRuns, currentUser, config: config!, configStatus });
       setError(null);
     } catch (nextError) {
       setError(getErrorMessage(nextError));

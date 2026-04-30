@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { Camera, Edit3, Globe, MoreHorizontal, Share2, Trash2, Video } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { AlertTriangle, Camera, Edit3, Globe, MoreHorizontal, Share2, Trash2, Video, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import BrandMark from '../components/BrandMark';
 import { useAppStore } from '../context/AppContext';
 import { getBrandProfileCompleteness } from '../utils/brandProfile';
 import type { BrandKnowledgeItem } from '../types';
+
+const API_ALERT_DISMISSED_KEY = 'mediax:api-alert-dismissed';
 
 const KNOWLEDGE_SOURCE_LABEL: Record<string, string> = {
   asset: '素材',
@@ -14,12 +16,49 @@ const KNOWLEDGE_SOURCE_LABEL: Record<string, string> = {
 };
 
 export default function Brand() {
-  const { brand, knowledgeItems, deleteKnowledgeItem } = useAppStore();
+  const navigate = useNavigate();
+  const { brand, configStatus, knowledgeItems, deleteKnowledgeItem } = useAppStore();
   const completeness = getBrandProfileCompleteness(brand);
+  const [alertDismissed, setAlertDismissed] = useState(false);
+
+  useEffect(() => {
+    setAlertDismissed(localStorage.getItem(API_ALERT_DISMISSED_KEY) === '1');
+  }, []);
+
+  const showApiAlert = !alertDismissed && configStatus && !configStatus.llm.configured;
 
   return (
     <div className="relative pb-20">
       <div className="absolute top-[20%] left-[-10%] w-[600px] h-[600px] border border-signal-orange/10 rounded-full pointer-events-none -z-10" />
+
+      {showApiAlert ? (
+        <div className="bento-card p-4 mb-6 flex items-center justify-between bg-amber-50 border border-amber-200">
+          <div className="flex items-center gap-3">
+            <AlertTriangle size={18} className="text-amber-600 shrink-0" />
+            <span className="text-sm font-bold text-amber-800">AI 接口尚未配置，Agent 将无法生成内容</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate('/settings')}
+              className="text-xs font-bold px-3 py-1.5 bg-amber-600 text-white rounded-full hover:bg-amber-700 transition-colors"
+            >
+              前往设置
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem(API_ALERT_DISMISSED_KEY, '1');
+                setAlertDismissed(true);
+              }}
+              className="p-1 text-amber-400 hover:text-amber-600 transition-colors"
+              aria-label="关闭"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-start mt-12">
         <div className="flex flex-col items-center lg:items-start relative">

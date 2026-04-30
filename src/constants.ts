@@ -5,7 +5,7 @@ export const DEFAULT_CONFIG: SystemConfig = {
     provider: 'deepseek',
     apiKey: '',
     baseUrl: 'https://api.deepseek.com/v1',
-    model: 'deepseek-chat',
+    model: 'deepseek-v4-pro',
   },
   imageGen: {
     provider: 'openai',

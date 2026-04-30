@@ -11,7 +11,7 @@ export function getLlmProvider(config?: LlmConfig): LlmProvider | null {
   if (!apiKey) return null;
 
   const baseUrl = config?.baseUrl?.trim() || 'https://api.deepseek.com/v1';
-  const model = config?.model?.trim() || process.env.DEEPSEEK_MODEL || 'deepseek-chat';
+  const model = config?.model?.trim() || process.env.DEEPSEEK_MODEL || 'deepseek-v4-pro';
 
   return createDeepSeekProvider({ apiKey, baseUrl, model });
 }

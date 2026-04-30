@@ -4,6 +4,7 @@ import { loadData, updateData } from '../store';
 import { runAgentTask } from '../agent/runAgentTask';
 import { simulatePublish, exportDraft } from '../publishers/simulatedPublisher';
 import { getImageGenerator } from '../media/imageGen';
+import { getProxyDispatcher } from '../fetchProxy';
 import { getLlmProvider } from '../llm';
 import {
   BrandProfile,
@@ -781,6 +782,223 @@ ${current.trim()}${brandContext}`;
     } catch {
       res.status(500).json({ error: '保存配置失败。' });
     }
+  });
+
+  // ---- Config Test ----
+
+  function mapHttpError(status: number): string {
+    switch (status) {
+      case 401: return 'API Key 无效，请检查是否填写正确';
+      case 403: return 'API Key 无权限，请检查账户余额和接口权限';
+      case 404: return 'Base URL 或 Model 名称错误';
+      default: return `API 返回错误 (${status})`;
+    }
+  }
+
+  router.post('/config/test-llm', async (req: Request, res: Response) => {
+    const { apiKey, baseUrl, model } = req.body as { apiKey?: string; baseUrl?: string; model?: string };
+
+    if (!apiKey?.trim()) {
+      res.status(400).json({ ok: false, error: '请先填写 API Key' });
+      return;
+    }
+    if (!baseUrl?.trim()) {
+      res.status(400).json({ ok: false, error: '请先填写 Base URL' });
+      return;
+    }
+
+    // HTTP headers require ASCII-only values
+    const nonAscii = /[^\x00-\x7F]/;
+    if (nonAscii.test(apiKey)) {
+      res.status(400).json({ ok: false, error: 'API Key 包含非英文字符，请检查是否复制粘贴时混入了中文' });
+      return;
+    }
+    if (nonAscii.test(baseUrl)) {
+      res.status(400).json({ ok: false, error: 'Base URL 包含非英文字符，请检查是否复制粘贴时混入了中文' });
+      return;
+    }
+    if (model && nonAscii.test(model)) {
+      res.status(400).json({ ok: false, error: 'Model 名称包含非英文字符' });
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15_000);
+
+    try {
+      const start = Date.now();
+      const response = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: model || 'deepseek-v4-pro',
+          messages: [{ role: 'user', content: 'Hi' }],
+          max_tokens: 1,
+          stream: false,
+        }),
+        signal: controller.signal,
+        ...getProxyDispatcher(),
+      });
+      clearTimeout(timer);
+
+      const latency = Date.now() - start;
+
+      if (!response.ok) {
+        let detail = '';
+        try {
+          const errBody = await response.text();
+          detail = ` — ${errBody.slice(0, 200)}`;
+        } catch { /* ignore */ }
+        res.json({ ok: false, error: mapHttpError(response.status) + detail });
+        return;
+      }
+
+      res.json({ ok: true, latency });
+    } catch (err: any) {
+      clearTimeout(timer);
+      if (err.name === 'AbortError') {
+        res.json({ ok: false, error: '连接超时（15 秒），请检查 Base URL 是否正确、网络是否可达' });
+      } else {
+        const msg = err?.message || err?.cause?.message || '';
+        if (msg.includes('ENOTFOUND') || msg.includes('getaddrinfo')) {
+          res.json({ ok: false, error: '域名解析失败，请检查 Base URL 中的域名是否正确' });
+        } else if (msg.includes('ECONNREFUSED')) {
+          res.json({ ok: false, error: '连接被拒绝，请检查 Base URL 和端口是否正确' });
+        } else if (msg.includes('CERT') || msg.includes('SSL') || msg.includes('TLS')) {
+          res.json({ ok: false, error: 'TLS/SSL 证书验证失败，请检查 Base URL 协议是否正确' });
+        } else if (msg.includes('fetch failed') || msg.includes('UND_ERR')) {
+          res.json({ ok: false, error: '无法连接目标服务器，可能被网络防火墙拦截，请检查代理设置或更换 Provider' });
+        } else {
+          res.json({ ok: false, error: `连接失败：${msg || '未知网络错误'}` });
+        }
+      }
+    }
+  });
+
+  router.post('/config/test-image-gen', async (req: Request, res: Response) => {
+    const { apiKey, baseUrl, model } = req.body as { apiKey?: string; baseUrl?: string; model?: string };
+
+    if (!apiKey?.trim()) {
+      res.status(400).json({ ok: false, error: '请先填写 API Key' });
+      return;
+    }
+    if (!baseUrl?.trim()) {
+      res.status(400).json({ ok: false, error: '请先填写 Base URL' });
+      return;
+    }
+
+    const nonAscii = /[^\x00-\x7F]/;
+    if (nonAscii.test(apiKey)) {
+      res.status(400).json({ ok: false, error: 'API Key 包含非英文字符，请检查是否复制粘贴时混入了中文' });
+      return;
+    }
+    if (nonAscii.test(baseUrl)) {
+      res.status(400).json({ ok: false, error: 'Base URL 包含非英文字符，请检查是否复制粘贴时混入了中文' });
+      return;
+    }
+    if (model && nonAscii.test(model)) {
+      res.status(400).json({ ok: false, error: 'Model 名称包含非英文字符' });
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15_000);
+
+    try {
+      const start = Date.now();
+      const response = await fetch(`${baseUrl.replace(/\/$/, '')}/images/generations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: model || 'gpt-image-2',
+          prompt: 'test',
+          n: 1,
+          size: '256x256',
+          response_format: 'b64_json',
+        }),
+        signal: controller.signal,
+        ...getProxyDispatcher(),
+      });
+      clearTimeout(timer);
+
+      const latency = Date.now() - start;
+
+      if (!response.ok) {
+        let detail = '';
+        try {
+          const errBody = await response.text();
+          detail = ` — ${errBody.slice(0, 200)}`;
+        } catch { /* ignore */ }
+        res.json({ ok: false, error: mapHttpError(response.status) + detail });
+        return;
+      }
+
+      res.json({ ok: true, latency });
+    } catch (err: any) {
+      clearTimeout(timer);
+      if (err.name === 'AbortError') {
+        res.json({ ok: false, error: '连接超时（15 秒），请检查 Base URL 是否正确、网络是否可达' });
+      } else {
+        const msg = err?.message || err?.cause?.message || '';
+        if (msg.includes('ENOTFOUND') || msg.includes('getaddrinfo')) {
+          res.json({ ok: false, error: '域名解析失败，请检查 Base URL 中的域名是否正确' });
+        } else if (msg.includes('ECONNREFUSED')) {
+          res.json({ ok: false, error: '连接被拒绝，请检查 Base URL 和端口是否正确' });
+        } else if (msg.includes('CERT') || msg.includes('SSL') || msg.includes('TLS')) {
+          res.json({ ok: false, error: 'TLS/SSL 证书验证失败，请检查 Base URL 协议是否正确' });
+        } else if (msg.includes('fetch failed') || msg.includes('UND_ERR')) {
+          res.json({ ok: false, error: '无法连接目标服务器，可能被网络防火墙拦截，请检查代理设置或更换 Provider' });
+        } else {
+          res.json({ ok: false, error: `连接失败：${msg || '未知网络错误'}` });
+        }
+      }
+    }
+  });
+
+  // ---- Config Status ----
+
+  router.get('/config/status', async (_req: Request, res: Response) => {
+    const data = await loadData();
+    const stored = data.config;
+
+    function getLlmStatus() {
+      const apiKey = stored.llm?.apiKey?.trim() || process.env.DEEPSEEK_API_KEY?.trim();
+      const provider = stored.llm?.provider || 'deepseek';
+      const model = stored.llm?.model?.trim() || process.env.DEEPSEEK_MODEL || 'deepseek-v4-pro';
+      const source = stored.llm?.apiKey?.trim() ? 'stored' : process.env.DEEPSEEK_API_KEY?.trim() ? 'env' : 'none';
+      return {
+        configured: !!apiKey,
+        source: apiKey ? source : 'none',
+        hasApiKey: !!apiKey,
+        provider,
+        model,
+      };
+    }
+
+    function getImageGenStatus() {
+      const apiKey = stored.imageGen?.apiKey?.trim() || process.env.IMAGE_GEN_API_KEY?.trim();
+      const provider = stored.imageGen?.provider || '';
+      const model = stored.imageGen?.model?.trim() || process.env.IMAGE_GEN_MODEL || 'gpt-image-2';
+      const source = stored.imageGen?.apiKey?.trim() ? 'stored' : process.env.IMAGE_GEN_API_KEY?.trim() ? 'env' : 'none';
+      return {
+        configured: !!apiKey,
+        source: apiKey ? source : 'none',
+        hasApiKey: !!apiKey,
+        provider,
+        model,
+      };
+    }
+
+    res.json({
+      llm: getLlmStatus(),
+      imageGen: getImageGenStatus(),
+    });
   });
 
   // ---- Publish ----

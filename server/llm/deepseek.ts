@@ -1,4 +1,5 @@
 import type { LlmProvider, LlmGenerateInput } from './types';
+import { getProxyDispatcher } from '../fetchProxy';
 
 interface DeepSeekResponse {
   choices: Array<{ message: { content: string } }>;
@@ -9,7 +10,7 @@ export function createDeepSeekProvider(config: {
   model?: string;
   baseUrl?: string;
 }): LlmProvider {
-  const model = config.model || 'deepseek-chat';
+  const model = config.model || 'deepseek-v4-pro';
   const baseUrl = config.baseUrl || 'https://api.deepseek.com';
 
   return {
@@ -32,6 +33,7 @@ export function createDeepSeekProvider(config: {
           temperature: input.temperature ?? 0.7,
           stream: false,
         }),
+        ...getProxyDispatcher(),
       });
 
       if (!response.ok) {

@@ -1,14 +1,24 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowRight, FileText, Newspaper, TrendingUp, Users } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { AlertTriangle, ArrowRight, FileText, Newspaper, TrendingUp, Users, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import BrandMark from '../components/BrandMark';
 import { useAppStore } from '../context/AppContext';
 import { getIndustryNews } from '../data/industryNews';
 import { planStatusLabel } from '../utils/presentation';
 
+const API_ALERT_DISMISSED_KEY = 'mediax:api-alert-dismissed';
+
 export default function Dashboard() {
-  const { brand, plans, planTasks, drafts } = useAppStore();
+  const navigate = useNavigate();
+  const { brand, configStatus, plans, planTasks, drafts } = useAppStore();
+  const [alertDismissed, setAlertDismissed] = useState(false);
+
+  useEffect(() => {
+    setAlertDismissed(localStorage.getItem(API_ALERT_DISMISSED_KEY) === '1');
+  }, []);
+
+  const showApiAlert = !alertDismissed && configStatus && !configStatus.llm.configured;
 
   const activePlans = plans.filter((plan) => plan.status === 'active').length;
   const inProgressStatuses: string[] = ['queued', 'researching', 'planning', 'creating'];
@@ -21,6 +31,34 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 pb-20">
+      {showApiAlert ? (
+        <div className="bento-card p-4 flex items-center justify-between bg-amber-50 border border-amber-200">
+          <div className="flex items-center gap-3">
+            <AlertTriangle size={18} className="text-amber-600 shrink-0" />
+            <span className="text-sm font-bold text-amber-800">AI 接口尚未配置，Agent 将无法生成内容</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate('/settings')}
+              className="text-xs font-bold px-3 py-1.5 bg-amber-600 text-white rounded-full hover:bg-amber-700 transition-colors"
+            >
+              前往设置
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem(API_ALERT_DISMISSED_KEY, '1');
+                setAlertDismissed(true);
+              }}
+              className="p-1 text-amber-400 hover:text-amber-600 transition-colors"
+              aria-label="关闭"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      ) : null}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch relative">
         <div className="lg:col-span-5 bento-card p-8 flex flex-col justify-between overflow-hidden relative">
           <div className="absolute -right-10 -top-10 opacity-20">

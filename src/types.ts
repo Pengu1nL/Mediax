@@ -261,6 +261,19 @@ export interface SystemConfig {
   videoGen: VideoGenConfig;
 }
 
+export interface ConfigStatusEntry {
+  configured: boolean;
+  source: 'stored' | 'env' | 'none';
+  hasApiKey: boolean;
+  provider: string;
+  model: string;
+}
+
+export interface ConfigStatus {
+  llm: ConfigStatusEntry;
+  imageGen: ConfigStatusEntry;
+}
+
 export interface AppData {
   brand: BrandProfile;
   assets: Asset[];
