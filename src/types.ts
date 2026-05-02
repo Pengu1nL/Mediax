@@ -3,16 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export interface Asset {
-  id: string;
-  name: string;
-  type: 'image' | 'video' | 'pdf' | 'folder';
-  size?: string;
-  updatedAt: string;
-  url?: string;
-  thumbnail?: string;
-}
-
 export interface BrandChannel {
   id: string;
   name: string;
@@ -22,9 +12,6 @@ export interface BrandChannel {
 }
 
 export type ReviewPolicy = 'manual_required' | 'auto_if_low_risk' | 'auto_publish';
-export type KnowledgeSourceType = 'asset' | 'website' | 'manual_note' | 'historic_content';
-export type KnowledgeContentType = 'text' | 'image' | 'video' | 'pdf' | 'document' | 'spreadsheet' | 'presentation';
-export type KnowledgeProcessingStatus = 'queued' | 'processing' | 'ready' | 'failed';
 
 export interface BrandProfile {
   id: string;
@@ -43,20 +30,26 @@ export interface BrandProfile {
   channels: BrandChannel[];
 }
 
-export interface BrandKnowledgeItem {
+// Knowledge entry source type
+export type KnowledgeSourceType = 'image' | 'pdf' | 'document' | 'text' | 'video';
+
+// Processing status
+export type KnowledgeProcessingStatus = 'processing' | 'ready' | 'failed';
+
+export interface KnowledgeEntry {
   id: string;
   brandId: string;
   sourceType: KnowledgeSourceType;
-  sourceName: string;
-  sourceUri?: string;
-  contentType: KnowledgeContentType;
+  originalName: string;
+  originalMimeType: string;
+  originalSizeBytes: number;
   status: KnowledgeProcessingStatus;
   summary: string;
   tags: string[];
-  extractedText?: string;
-  assetIds: string[];
-  confidence: number;
-  error?: string;
+  mdFilePath: string;
+  extractionConfidence: number;
+  extractionError?: string;
+  migratedFromLegacy?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -276,8 +269,7 @@ export interface ConfigStatus {
 
 export interface AppData {
   brand: BrandProfile;
-  assets: Asset[];
-  knowledgeItems: BrandKnowledgeItem[];
+  knowledgeEntries: KnowledgeEntry[];
   plans: Plan[];
   planTasks: PlanTask[];
   drafts: Draft[];
