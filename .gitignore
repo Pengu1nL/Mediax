@@ -7,3 +7,4 @@ dist/
 data.json
 doc/
 docs/
+.worktrees/
