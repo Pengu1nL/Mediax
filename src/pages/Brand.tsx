@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import BrandMark from '../components/BrandMark';
 import { useAppStore } from '../context/AppContext';
 import { getBrandProfileCompleteness } from '../utils/brandProfile';
-import type { BrandKnowledgeItem } from '../types';
+import type { KnowledgeEntry } from '../types';
 
 const API_ALERT_DISMISSED_KEY = 'mediax:api-alert-dismissed';
 
@@ -17,7 +17,7 @@ const KNOWLEDGE_SOURCE_LABEL: Record<string, string> = {
 
 export default function Brand() {
   const navigate = useNavigate();
-  const { brand, configStatus, knowledgeItems, deleteKnowledgeItem } = useAppStore();
+  const { brand, configStatus, knowledgeEntries, deleteKnowledgeEntry } = useAppStore();
   const completeness = getBrandProfileCompleteness(brand);
   const [alertDismissed, setAlertDismissed] = useState(false);
 
@@ -99,7 +99,7 @@ export default function Brand() {
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">品牌知识条目</p>
-                <p className="text-lg font-black text-ink-black">{knowledgeItems.length}</p>
+                <p className="text-lg font-black text-ink-black">{knowledgeEntries.length}</p>
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">审核策略</p>
@@ -188,14 +188,14 @@ export default function Brand() {
           <div className="bento-card p-10 space-y-6">
             <div className="flex justify-between items-center border-b border-zinc-100 pb-6">
               <h3 className="text-2xl font-bold">品牌知识库</h3>
-              <span className="text-sm font-bold text-zinc-400">{knowledgeItems.length} 条</span>
+              <span className="text-sm font-bold text-zinc-400">{knowledgeEntries.length} 条</span>
             </div>
-            {knowledgeItems.length === 0 ? (
+            {knowledgeEntries.length === 0 ? (
               <p className="text-sm text-zinc-400 font-medium py-4">暂无知识条目。在素材库中将文件"加入品牌知识"即可。</p>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {knowledgeItems.map((item) => (
-                  <KnowledgeRow item={item} onDelete={() => deleteKnowledgeItem(item.id)} />
+                {knowledgeEntries.map((item) => (
+                  <KnowledgeRow item={item} onDelete={() => deleteKnowledgeEntry(item.id)} />
                 ))}
               </div>
             )}
@@ -205,13 +205,13 @@ export default function Brand() {
   );
 }
 
-function KnowledgeRow({ item, onDelete }: { key?: React.Key; item: BrandKnowledgeItem; onDelete: () => void }) {
+function KnowledgeRow({ item, onDelete }: { key?: React.Key; item: KnowledgeEntry; onDelete: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <div className="flex items-start justify-between gap-4 p-4 bg-white rounded-2xl border border-zinc-100">
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-black text-ink-black truncate">{item.sourceName}</p>
+        <p className="text-sm font-black text-ink-black truncate">{item.originalName}</p>
         <p className="text-xs font-medium text-slate-gray mt-1 line-clamp-2">{item.summary}</p>
         <div className="flex items-center gap-2 mt-2 flex-wrap">
           <span className="px-2 py-0.5 rounded-full bg-zinc-100 text-[10px] font-bold text-zinc-500">

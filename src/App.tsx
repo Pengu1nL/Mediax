@@ -13,7 +13,7 @@ import Brand from './pages/Brand';
 import Dashboard from './pages/Dashboard';
 import DraftEditor from './pages/DraftEditor';
 import Drafts from './pages/Drafts';
-import Library from './pages/Library';
+import KnowledgeBase from './pages/KnowledgeBase';
 import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
 import PlanDetails from './pages/PlanDetails';
@@ -135,7 +135,7 @@ export default function App({ repositories }: { repositories?: import('./reposit
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/brand" element={<Brand />} />
-              <Route path="/library" element={<Library />} />
+              <Route path="/knowledge" element={<KnowledgeBase />} />
               <Route path="/plans" element={<Plans />} />
               <Route path="/plans/:planId" element={<PlanDetails />} />
               <Route path="/plans/:planId/tasks/:taskId" element={<TaskDetails />} />

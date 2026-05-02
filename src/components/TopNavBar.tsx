@@ -7,7 +7,7 @@ import { useAppStore } from '../context/AppContext';
 const navItems = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/brand', label: 'Brand' },
-  { to: '/library', label: 'Library' },
+  { to: '/knowledge', label: '知识库' },
   { to: '/plans', label: 'Plans' },
   { to: '/drafts', label: 'Drafts' },
 ];
