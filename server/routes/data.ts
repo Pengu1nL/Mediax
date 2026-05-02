@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { requireAuth } from '../auth';
 import { loadData, updateData } from '../store';
 import { runAgentTask } from '../agent/runAgentTask';
@@ -6,13 +6,13 @@ import { simulatePublish, exportDraft } from '../publishers/simulatedPublisher';
 import { getImageGenerator } from '../media/imageGen';
 import { getProxyDispatcher } from '../fetchProxy';
 import { getLlmProvider } from '../llm';
+import multer from 'multer';
+import { processFile } from '../knowledge/processor';
 import {
   BrandProfile,
-  BrandKnowledgeItem,
   Draft,
   DraftStatus,
   ExecutionType,
-  KnowledgeContentType,
   KnowledgeSourceType,
   Plan,
   PlanStatus,
@@ -34,18 +34,6 @@ function normalizeExcerpt(input: { excerpt: string; content: string }): string {
   return excerpt || input.content.trim().slice(0, 80);
 }
 
-interface CreateKnowledgeItemInput {
-  brandId: string;
-  sourceType: KnowledgeSourceType;
-  sourceName: string;
-  sourceUri?: string;
-  contentType: KnowledgeContentType;
-  summary: string;
-  tags?: string[];
-  extractedText?: string;
-  assetIds?: string[];
-  confidence?: number;
-}
 
 export function createDataRouter(): Router {
   const router = Router();
@@ -177,65 +165,157 @@ ${current.trim()}${brandContext}`;
     }
   });
 
-  // ---- Brand Knowledge ----
+  // ---- Knowledge Entries ----
 
   router.get('/knowledge', async (req: Request, res: Response) => {
     try {
       const brandId = String(req.query.brandId ?? '');
       const data = await loadData();
-      res.json(data.knowledgeItems.filter((item) => item.brandId === brandId));
+      res.json(data.knowledgeEntries.filter((entry) => entry.brandId === brandId));
     } catch {
       res.status(500).json({ error: '读取品牌知识失败。' });
     }
   });
 
-  router.delete('/knowledge/:itemId', async (req: Request, res: Response) => {
+  router.get('/knowledge/:entryId', async (req: Request, res: Response) => {
     try {
-      const { itemId } = req.params;
+      const { entryId } = req.params;
+      const data = await loadData();
+      const entry = data.knowledgeEntries.find((e) => e.id === entryId);
+      if (!entry) {
+        res.status(404).json({ error: '知识条目不存在。' });
+        return;
+      }
+      const full = req.query.full === 'true';
+      if (full) {
+        const { readKnowledgeMd } = await import('../knowledge/storage');
+        const mdContent = await readKnowledgeMd(entryId);
+        res.json({ ...entry, mdContent });
+      } else {
+        res.json(entry);
+      }
+    } catch {
+      res.status(500).json({ error: '读取知识条目失败。' });
+    }
+  });
+
+  router.delete('/knowledge/:entryId', async (req: Request, res: Response) => {
+    try {
+      const { entryId } = req.params;
+      const { deleteKnowledgeDir } = await import('../knowledge/storage');
+      await deleteKnowledgeDir(entryId);
       await updateData((data) => {
-        data.knowledgeItems = data.knowledgeItems.filter((k) => k.id !== itemId);
+        data.knowledgeEntries = data.knowledgeEntries.filter((e) => e.id !== entryId);
         return { data, result: undefined };
       });
       res.json({ ok: true });
     } catch {
-      res.status(500).json({ error: '删除品牌知识失败。' });
+      res.status(500).json({ error: '删除知识条目失败。' });
     }
   });
 
-  router.post('/knowledge', async (req: Request, res: Response) => {
+  // ---- Knowledge Upload ----
+
+  const knowledgeUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 50 * 1024 * 1024, files: 10 },
+  }).array('files', 10);
+
+  function detectSourceTypeFromFile(file: Express.Multer.File): 'image' | 'pdf' | 'document' | 'text' | 'video' {
+    const mime = file.mimetype;
+    if (mime.startsWith('image/')) return 'image';
+    if (mime === 'application/pdf') return 'pdf';
+    if (mime.startsWith('video/')) return 'video';
+    if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'document';
+    const ext = file.originalname.split('.').pop()?.toLowerCase();
+    if (ext === 'pdf') return 'pdf';
+    if (ext === 'docx') return 'document';
+    return 'text';
+  }
+
+  router.post('/knowledge/upload', (req: Request, res: Response, next: NextFunction) => {
+    knowledgeUpload(req, res, (err) => {
+      if (err) {
+        if ((err as any).code === 'LIMIT_FILE_SIZE') {
+          res.status(400).json({ error: '文件超过 50MB 限制。' });
+          return;
+        }
+        if ((err as any).code === 'LIMIT_FILE_COUNT') {
+          res.status(400).json({ error: '一次最多上传 10 个文件。' });
+          return;
+        }
+        res.status(400).json({ error: err.message });
+        return;
+      }
+      next();
+    });
+  }, async (req: Request, res: Response) => {
     try {
-      const input = req.body as CreateKnowledgeItemInput;
-      if (!input.brandId || !input.sourceType || !input.sourceName || !input.contentType || !input.summary) {
-        res.status(400).json({ error: '品牌知识信息不完整。' });
+      const files = (req as any).files as Express.Multer.File[] | undefined;
+      if (!files || files.length === 0) {
+        res.status(400).json({ error: '未选择文件。' });
         return;
       }
 
-      const item = await updateData((data) => {
-        const now = new Date().toISOString();
-        const knowledgeItem: BrandKnowledgeItem = {
-          id: createId('knowledge'),
-          brandId: input.brandId,
-          sourceType: input.sourceType,
-          sourceName: input.sourceName,
-          sourceUri: input.sourceUri,
-          contentType: input.contentType,
-          status: 'ready',
-          summary: input.summary,
-          tags: input.tags ?? [],
-          extractedText: input.extractedText,
-          assetIds: input.assetIds ?? [],
-          confidence: input.confidence ?? 1,
-          createdAt: now,
-          updatedAt: now,
-        };
+      const brandId = (req as any).body?.brandId as string;
+      if (!brandId) {
+        res.status(400).json({ error: '缺少 brandId。' });
+        return;
+      }
 
-        data.knowledgeItems.unshift(knowledgeItem);
-        return { data, result: knowledgeItem };
-      });
+      const unsupportedExts = new Set(['.doc', '.exe', '.dmg', '.apk']);
+      const rejected: { fileName: string; reason: string }[] = [];
+      const validFiles: Express.Multer.File[] = [];
 
-      res.status(201).json(item);
+      for (const file of files) {
+        const ext = '.' + (file.originalname.split('.').pop()?.toLowerCase() || '');
+        if (unsupportedExts.has(ext)) {
+          rejected.push({ fileName: file.originalname, reason: `.${ext} 格式暂不支持` });
+        } else {
+          validFiles.push(file);
+        }
+      }
+
+      const data = await loadData();
+      const storedConfig = data.config;
+
+      const entries = [];
+      const errors = [...rejected];
+
+      for (const file of validFiles) {
+        try {
+          const entryId = createId('entry');
+          const processed = await processFile(
+            entryId, brandId,
+            { buffer: file.buffer, originalName: file.originalname, mimeType: file.mimetype },
+            storedConfig?.llm,
+          );
+          const now = new Date().toISOString();
+          const entry = {
+            id: processed.id, brandId, sourceType: processed.sourceType,
+            originalName: processed.originalName, originalMimeType: file.mimetype,
+            originalSizeBytes: file.size, status: processed.status,
+            summary: processed.summary, tags: processed.tags,
+            mdFilePath: `knowledge/${processed.id}/summary.md`,
+            extractionConfidence: processed.extractionConfidence,
+            extractionError: processed.extractionError, createdAt: now, updatedAt: now,
+          };
+          await updateData((current) => {
+            current.knowledgeEntries.unshift(entry as any);
+            return { data: current, result: undefined };
+          });
+          entries.push(entry);
+        } catch (err) {
+          errors.push({
+            fileName: file.originalname,
+            reason: err instanceof Error ? err.message : '处理失败',
+          });
+        }
+      }
+
+      res.status(201).json({ entries, errors });
     } catch {
-      res.status(500).json({ error: '创建品牌知识失败。' });
+      res.status(500).json({ error: '上传处理失败。' });
     }
   });
 

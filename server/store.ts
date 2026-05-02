@@ -37,17 +37,7 @@ function defaultData(): AppData {
         { id: 'c4', name: '视频号', handle: '@Mediax', kind: 'video', active: true },
       ],
     },
-    assets: [
-      { id: 'f1', name: '2024 春季营销中心', type: 'folder', size: '124 项目', updatedAt: '1小时前', thumbnail: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?auto=format&fit=crop&q=80&w=400' },
-      { id: 'f2', name: '品牌核心资源库', type: 'folder', size: '45 项目', updatedAt: '昨天', thumbnail: 'https://images.unsplash.com/photo-1558655146-d09347e92766?auto=format&fit=crop&q=80&w=400' },
-      { id: 'f3', name: '小红书投放素材', type: 'folder', size: '89 项目', updatedAt: '2天前', thumbnail: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&q=80&w=400' },
-      { id: 'f4', name: '极简视觉指南', type: 'folder', size: '12 项目', updatedAt: '3天前', thumbnail: 'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&q=80&w=400' },
-      { id: 'f5', name: '未修图原片', type: 'folder', size: '234 项目', updatedAt: '4天前', thumbnail: 'https://images.unsplash.com/photo-1492691523567-627a92ad1ab?auto=format&fit=crop&q=80&w=400' },
-      { id: 'f6', name: '视频剪辑素材', type: 'folder', size: '18 项目', updatedAt: '5天前', thumbnail: 'https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&q=80&w=400' },
-      { id: 'f7', name: '字体与排版', type: 'folder', size: '67 项目', updatedAt: '1周前', thumbnail: 'https://images.unsplash.com/photo-1572044162444-ad60f128bdea?auto=format&fit=crop&q=80&w=400' },
-      { id: 'f8', name: '归档资产 2023', type: 'folder', size: '512 项目', updatedAt: '1周前', thumbnail: 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&q=80&w=400' },
-    ],
-    knowledgeItems: [],
+    knowledgeEntries: [],
     agentRuns: [],
     publishRecords: [],
     config: {
@@ -76,7 +66,7 @@ function defaultData(): AppData {
 function normalizeData(data: AppData): AppData {
   return {
     ...data,
-    knowledgeItems: data.knowledgeItems ?? [],
+    knowledgeEntries: data.knowledgeEntries ?? [],
     agentRuns: data.agentRuns ?? [],
     publishRecords: data.publishRecords ?? [],
     config: data.config ?? {

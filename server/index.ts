@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createAuthRouter } from './auth';
 import { createDataRouter } from './routes/data';
+import { migrateKnowledgeItems } from './knowledge/migrate';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -31,7 +32,16 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  try {
+    const migrated = await migrateKnowledgeItems();
+    if (migrated > 0) {
+      console.log(`[server] Migrated ${migrated} legacy knowledge items.`);
+    }
+  } catch (err) {
+    console.error('[server] Migration error:', err);
+  }
+
   console.log(`[server] Mediax API server running on http://localhost:${PORT}`);
   console.log(`[server] Endpoints:`);
   console.log(`  Auth:  POST /api/auth/login  |  GET /api/auth/me`);
