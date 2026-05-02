@@ -49,13 +49,10 @@ function createRepositories(refreshDrafts: Promise<Draft[]>): AppRepositories {
       getProfile: vi.fn(async () => brand),
       saveProfile: vi.fn(async (profile) => profile),
     },
-    assets: {
-      getAssets: vi.fn(async () => []),
-    },
     knowledge: {
-      getKnowledgeItems: vi.fn(async () => []),
-      createKnowledgeItem: vi.fn(),
-      deleteKnowledgeItem: vi.fn(async () => undefined),
+      getKnowledgeEntries: vi.fn(async () => []),
+      uploadKnowledgeEntries: vi.fn(),
+      deleteKnowledgeEntry: vi.fn(async () => undefined),
     },
     plans: {
       getPlans: vi.fn(async () => []),
@@ -105,15 +102,12 @@ function createLoginRepositories(knowledgeError: Error): AppRepositories {
       getProfile: vi.fn(async () => ({ ...brand, setupComplete: true })),
       saveProfile: vi.fn(async (profile) => profile),
     },
-    assets: {
-      getAssets: vi.fn(async () => []),
-    },
     knowledge: {
-      getKnowledgeItems: vi.fn(async () => {
+      getKnowledgeEntries: vi.fn(async () => {
         throw knowledgeError;
       }),
-      createKnowledgeItem: vi.fn(),
-      deleteKnowledgeItem: vi.fn(async () => undefined),
+      uploadKnowledgeEntries: vi.fn(),
+      deleteKnowledgeEntry: vi.fn(async () => undefined),
     },
     plans: {
       getPlans: vi.fn(async () => []),

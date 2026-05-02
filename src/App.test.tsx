@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
+import { createSeedAppData } from './constants';
 import { createLocalStorageRepositories } from './repositories/localStorageRepositories';
 
 describe('App routing', () => {
@@ -185,19 +186,18 @@ describe('App routing', () => {
     expect(screen.getByText('主视觉海报发布 - 微信公众号')).toBeInTheDocument();
   });
 
-  it('shows local folder access guidance in unsupported browsers', async () => {
+  it('shows the knowledge base page', async () => {
     signInSession();
     const repos = createLocalStorageRepositories(window.localStorage);
     await completeBrandSetup(repos);
 
     render(
-      <MemoryRouter initialEntries={['/library']}>
+      <MemoryRouter initialEntries={['/knowledge']}>
         <App repositories={repos} />
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('当前浏览器不支持本地文件夹访问')).toBeInTheDocument();
-    expect(screen.getByText('请使用 Chrome 或 Edge 打开 Mediax，再绑定本地素材文件夹。')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '知识库' })).toBeInTheDocument();
   });
 
   it('creates an agent-ready task and shows brief, channel, contentType and reviewPolicy on task detail page', async () => {
@@ -227,18 +227,28 @@ describe('App routing', () => {
 
   it('shows the brand knowledge count on the brand page', async () => {
     signInSession();
-    const repos = createLocalStorageRepositories(window.localStorage);
-    await completeBrandSetup(repos);
-    await repos.knowledge.createKnowledgeItem({
+
+    // Seed a knowledge entry directly (createKnowledgeItem was removed)
+    const seedData = createSeedAppData();
+    seedData.knowledgeEntries.push({
+      id: 'knowledge-1',
       brandId: 'brand-1',
-      sourceType: 'manual_note',
-      sourceName: '品牌语气规则',
-      contentType: 'text',
+      sourceType: 'text',
+      originalName: '品牌语气规则.txt',
+      originalMimeType: 'text/plain',
+      originalSizeBytes: 100,
+      status: 'ready',
       summary: '品牌表达保持专业、可信、温暖。',
       tags: ['品牌语气'],
-      assetIds: [],
-      confidence: 0.9,
+      mdFilePath: '/knowledge/knowledge-1.md',
+      extractionConfidence: 0.9,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
+    window.localStorage.setItem('mediax.app-data.v1', JSON.stringify(seedData));
+
+    const repos = createLocalStorageRepositories(window.localStorage);
+    await completeBrandSetup(repos);
 
     render(
       <MemoryRouter initialEntries={['/brand']}>

@@ -144,11 +144,11 @@ export default function AgentRunDetails() {
       </section>
 
       {/* Used Knowledge */}
-      {agentRun.usedKnowledgeItemIds.length > 0 ? (
+      {agentRun.usedKnowledgeEntryIds.length > 0 ? (
         <section className="bento-card p-8">
           <h2 className="text-lg font-black text-ink-black mb-4">使用的品牌知识</h2>
           <p className="text-sm font-medium text-slate-gray">
-            共引用 {agentRun.usedKnowledgeItemIds.length} 条品牌知识条目
+            共引用 {agentRun.usedKnowledgeEntryIds.length} 条品牌知识条目
           </p>
         </section>
       ) : null}

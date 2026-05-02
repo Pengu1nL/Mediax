@@ -34,8 +34,7 @@ function dataWithDraft(): AppData {
       setupComplete: false,
       channels: [],
     },
-    assets: [],
-    knowledgeItems: [],
+    knowledgeEntries: [],
     plans: [],
     planTasks: [],
     drafts: [
@@ -232,29 +231,24 @@ describe('data API routes', () => {
     // seedApiData mutates a local copy — check via another route
   });
 
-  it('creates and returns brand knowledge items', async () => {
-    seedApiData(dataWithDraft());
-
-    const createResponse = await invokeRoute('post', '/knowledge', {
-      body: {
-        brandId: 'brand-1',
-        sourceType: 'manual_note',
-        sourceName: '开放日招生话术',
-        contentType: 'text',
-        summary: '开放日传播要保持专业和可信。',
-        tags: ['招生', '活动'],
-        extractedText: '微信公众号 招生 活动 海报',
-        assetIds: [],
-        confidence: 0.88,
-      },
-    });
-
-    expect(createResponse.statusCode).toBe(201);
-    expect(createResponse.body).toMatchObject({
+  it('returns knowledge entries for a brand', async () => {
+    const data = dataWithDraft();
+    data.knowledgeEntries = [{
+      id: 'entry-1',
       brandId: 'brand-1',
-      sourceName: '开放日招生话术',
+      sourceType: 'text',
+      originalName: '开放日招生话术.txt',
+      originalMimeType: 'text/plain',
+      originalSizeBytes: 100,
       status: 'ready',
-    });
+      summary: '开放日传播要保持专业和可信。',
+      tags: ['招生', '活动'],
+      mdFilePath: '/knowledge/entry-1.md',
+      extractionConfidence: 0.88,
+      createdAt: '2026-04-24T12:00:00.000Z',
+      updatedAt: '2026-04-24T12:00:00.000Z',
+    }];
+    seedApiData(data);
 
     const listResponse = await invokeRoute('get', '/knowledge', {
       query: { brandId: 'brand-1' },
@@ -264,7 +258,7 @@ describe('data API routes', () => {
     expect(listResponse.body).toEqual([
       expect.objectContaining({
         brandId: 'brand-1',
-        sourceName: '开放日招生话术',
+        originalName: '开放日招生话术.txt',
       }),
     ]);
   });

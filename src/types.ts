@@ -203,7 +203,7 @@ export interface AgentRun {
   status: AgentRunStatus;
   currentStep: string;
   steps: AgentRunStep[];
-  usedKnowledgeItemIds: string[];
+  usedKnowledgeEntryIds: string[];
   usedAssetIds: string[];
   outputDraftId?: string;
   error?: string;

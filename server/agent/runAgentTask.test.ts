@@ -29,19 +29,19 @@ function seedData(): AppData {
       setupComplete: true,
       channels: [],
     },
-    assets: [],
-    knowledgeItems: [
+    knowledgeEntries: [
       {
         id: 'k1',
         brandId: 'brand-1',
-        sourceType: 'manual_note' as const,
-        sourceName: '招生话术',
-        contentType: 'text' as const,
+        sourceType: 'text' as const,
+        originalName: '招生话术.txt',
+        originalMimeType: 'text/plain',
+        originalSizeBytes: 100,
         status: 'ready' as const,
         summary: '招生传播应专业可信。',
         tags: ['招生'],
-        assetIds: [],
-        confidence: 0.9,
+        mdFilePath: '/knowledge/k1.md',
+        extractionConfidence: 0.9,
         createdAt: '2026-04-01T00:00:00Z',
         updatedAt: '2026-04-01T00:00:00Z',
       },
@@ -103,7 +103,7 @@ describe('runAgentTask', () => {
     expect(agentRun.brandId).toBe('brand-1');
     expect(agentRun.taskId).toBe('task-1');
     expect(agentRun.steps).toHaveLength(3);
-    expect(agentRun.usedKnowledgeItemIds).toEqual(['k1']);
+    expect(agentRun.usedKnowledgeEntryIds).toEqual(['k1']);
     expect(agentRun.outputDraftId).toBeTruthy();
 
     // Verify draft is linked to task, plan, brand, and agent run
