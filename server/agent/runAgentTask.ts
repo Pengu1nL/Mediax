@@ -31,7 +31,7 @@ export async function runAgentTask(
   const context = loadAgentTaskContext(currentData, taskId, runId);
 
   const now = new Date().toISOString();
-  const knowledge = context.knowledgeItems;
+  const knowledge = context.knowledgeEntries;
   const storedConfig = currentData.config;
   const llmAvailable = Boolean(getLlmProvider(storedConfig?.llm));
   const imageGen = getImageGenerator(storedConfig?.imageGen);
@@ -183,7 +183,7 @@ export async function runAgentTask(
       status: 'waiting_for_review' as AgentRunStatus,
       currentStep: imageBase64 ? '生成配图' : '生成内容草稿',
       steps,
-      usedKnowledgeItemIds: knowledge.map((k) => k.id),
+      usedKnowledgeEntryIds: knowledge.map((k) => k.id),
       usedAssetIds: imageAssetId ? [imageAssetId] : [],
       outputDraftId: draft.id,
       startedAt: now,

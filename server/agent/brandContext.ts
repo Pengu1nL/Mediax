@@ -13,7 +13,7 @@ export function loadAgentTaskContext(
   if (!plan) throw new Error('未找到关联的计划。');
 
   const brand = data.brand;
-  const knowledgeItems = data.knowledgeItems.filter((k) => k.brandId === brand.id);
+  const knowledgeEntries = data.knowledgeEntries.filter((k) => k.brandId === brand.id);
 
-  return { brand, plan, task, knowledgeItems, agentRunId };
+  return { brand, plan, task, knowledgeEntries, agentRunId };
 }

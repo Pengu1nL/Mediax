@@ -17,7 +17,7 @@ export interface CreateDraftInput {
 function buildSystemPrompt(context: AgentTaskContext): string {
   const brand = context.brand;
   const task = context.task;
-  const knowledge = context.knowledgeItems;
+  const knowledge = context.knowledgeEntries;
 
   const parts = [
     `你是品牌"${brand.name}"的内容创作助手。`,
