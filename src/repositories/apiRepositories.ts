@@ -1,10 +1,9 @@
 import {
   AgentRun,
   AppData,
-  Asset,
-  BrandKnowledgeItem,
   BrandProfile,
   Draft,
+  KnowledgeEntry,
   LoginCredentials,
   Plan,
   PlanTask,
@@ -14,7 +13,6 @@ import {
 import { apiClient } from '../api/client';
 import type {
   CreateDraftInput,
-  CreateKnowledgeItemInput,
   CreatePlanInput,
   CreatePlanTaskInput,
   UpdateDraftInput,
@@ -50,14 +48,10 @@ export interface ApiBrandRepository {
   suggestFields(input: BrandSuggestInput): Promise<BrandSuggestResult>;
 }
 
-export interface ApiAssetRepository {
-  getAssets(): Promise<Asset[]>;
-}
-
 export interface ApiKnowledgeRepository {
-  getKnowledgeItems(brandId: string): Promise<BrandKnowledgeItem[]>;
-  createKnowledgeItem(input: CreateKnowledgeItemInput): Promise<BrandKnowledgeItem>;
-  deleteKnowledgeItem(itemId: string): Promise<void>;
+  getKnowledgeEntries(brandId: string): Promise<KnowledgeEntry[]>;
+  uploadKnowledgeEntries(brandId: string, files: File[]): Promise<{ entries: KnowledgeEntry[]; errors: { fileName: string; reason: string }[] }>;
+  deleteKnowledgeEntry(entryId: string): Promise<void>;
 }
 
 export interface ApiPlanRepository {
@@ -95,7 +89,6 @@ export interface ApiAgentRunRepository {
 
 export interface ApiDataRepositories {
   brand: ApiBrandRepository;
-  assets: ApiAssetRepository;
   knowledge: ApiKnowledgeRepository;
   plans: ApiPlanRepository;
   drafts: ApiDraftRepository;
@@ -152,21 +145,18 @@ export function createApiDataRepositories(): ApiDataRepositories {
         return apiClient.post<BrandSuggestResult>('/brand/suggest', input);
       },
     },
-    assets: {
-      async getAssets() {
-        const data = await fetchData();
-        return data.assets;
-      },
-    },
     knowledge: {
-      async getKnowledgeItems(brandId) {
-        return apiClient.get<BrandKnowledgeItem[]>(`/knowledge?brandId=${encodeURIComponent(brandId)}`);
+      async getKnowledgeEntries(brandId) {
+        return apiClient.get<KnowledgeEntry[]>(`/knowledge?brandId=${encodeURIComponent(brandId)}`);
       },
-      async createKnowledgeItem(input) {
-        return apiClient.post<BrandKnowledgeItem>('/knowledge', input);
+      async deleteKnowledgeEntry(entryId) {
+        await apiClient.delete(`/knowledge/${entryId}`);
       },
-      async deleteKnowledgeItem(itemId) {
-        await apiClient.delete(`/knowledge/${itemId}`);
+      async uploadKnowledgeEntries(brandId, files) {
+        const formData = new FormData();
+        formData.append('brandId', brandId);
+        files.forEach((f) => formData.append('files', f));
+        return apiClient.post<{ entries: KnowledgeEntry[]; errors: { fileName: string; reason: string }[] }>('/knowledge/upload', formData);
       },
     },
     plans: {

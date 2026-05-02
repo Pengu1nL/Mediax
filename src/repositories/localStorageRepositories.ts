@@ -1,17 +1,15 @@
 import { createSeedAppData } from '../constants';
 import {
   AppData,
-  Asset,
   AgentRun,
   AgentRunStep,
   PublishRecord,
   SystemConfig,
-  BrandKnowledgeItem,
   BrandProfile,
   Draft,
   DraftStatus,
   ExecutionType,
-  KnowledgeContentType,
+  KnowledgeEntry,
   KnowledgeSourceType,
   LoginCredentials,
   Plan,
@@ -82,19 +80,6 @@ export interface CreateDraftInput {
 
 export interface UpdateDraftInput extends Partial<CreateDraftInput> {}
 
-export interface CreateKnowledgeItemInput {
-  brandId: string;
-  sourceType: KnowledgeSourceType;
-  sourceName: string;
-  sourceUri?: string;
-  contentType: KnowledgeContentType;
-  summary: string;
-  tags: string[];
-  extractedText?: string;
-  assetIds: string[];
-  confidence: number;
-}
-
 export interface BrandSuggestInput {
   field: string;
   current: string;
@@ -115,10 +100,6 @@ export interface BrandRepository {
   getProfile(): Promise<BrandProfile>;
   saveProfile(profile: BrandProfile): Promise<BrandProfile>;
   suggestFields?(input: BrandSuggestInput): Promise<BrandSuggestResult | null>;
-}
-
-export interface AssetRepository {
-  getAssets(): Promise<Asset[]>;
 }
 
 export interface PlanRepository {
@@ -149,9 +130,9 @@ export interface DraftRepository {
 }
 
 export interface KnowledgeRepository {
-  getKnowledgeItems(brandId: string): Promise<BrandKnowledgeItem[]>;
-  createKnowledgeItem(input: CreateKnowledgeItemInput): Promise<BrandKnowledgeItem>;
-  deleteKnowledgeItem(itemId: string): Promise<void>;
+  getKnowledgeEntries(brandId: string): Promise<KnowledgeEntry[]>;
+  uploadKnowledgeEntries(brandId: string, files: File[]): Promise<{ entries: KnowledgeEntry[]; errors: { fileName: string; reason: string }[] }>;
+  deleteKnowledgeEntry(entryId: string): Promise<void>;
 }
 
 export interface AgentRunRepository {
@@ -173,7 +154,6 @@ export interface SessionRepository {
 
 export interface AppRepositories {
   brand: BrandRepository;
-  assets: AssetRepository;
   knowledge: KnowledgeRepository;
   plans: PlanRepository;
   drafts: DraftRepository;
@@ -210,7 +190,7 @@ function normalizeExcerpt(input: { excerpt: string; content: string }): string {
 function normalizeData(data: AppData): AppData {
   return {
     ...data,
-    knowledgeItems: data.knowledgeItems ?? [],
+    knowledgeEntries: data.knowledgeEntries ?? [],
     agentRuns: data.agentRuns ?? [],
     publishRecords: data.publishRecords ?? [],
     config: data.config ?? {
@@ -281,44 +261,26 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
         });
       },
     },
-    assets: {
-      async getAssets() {
-        return clone(store.readData().assets);
-      },
-    },
     knowledge: {
-      async getKnowledgeItems(brandId) {
-        return clone(store.readData().knowledgeItems.filter((item) => item.brandId === brandId));
+      async getKnowledgeEntries(brandId) {
+        return clone(store.readData().knowledgeEntries.filter((item) => item.brandId === brandId));
       },
-      async createKnowledgeItem(input) {
-        return store.updateData((current) => {
-          const now = new Date().toISOString();
-          const item: BrandKnowledgeItem = {
-            id: createId('knowledge'),
-            brandId: input.brandId,
-            sourceType: input.sourceType,
-            sourceName: input.sourceName,
-            sourceUri: input.sourceUri,
-            contentType: input.contentType,
-            status: 'ready',
-            summary: input.summary,
-            tags: input.tags,
-            extractedText: input.extractedText,
-            assetIds: input.assetIds,
-            confidence: input.confidence,
-            createdAt: now,
-            updatedAt: now,
-          };
-
-          current.knowledgeItems.unshift(item);
-          return { next: current, result: item };
-        });
-      },
-      async deleteKnowledgeItem(itemId) {
+      async deleteKnowledgeEntry(entryId) {
         store.updateData((current) => {
-          current.knowledgeItems = current.knowledgeItems.filter((k) => k.id !== itemId);
+          current.knowledgeEntries = current.knowledgeEntries.filter((k) => k.id !== entryId);
           return { next: current, result: undefined };
         });
+      },
+      async uploadKnowledgeEntries(brandId, files) {
+        const formData = new FormData();
+        formData.append('brandId', brandId);
+        files.forEach((f) => formData.append('files', f));
+        const token = storage.getItem('mediax.auth-token.v1');
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch('/api/knowledge/upload', { method: 'POST', headers, body: formData });
+        if (!res.ok) throw new Error('上传失败');
+        return res.json();
       },
     },
     plans: {
@@ -705,7 +667,7 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
           const plan = current.plans.find((p) => p.id === task.planId);
           if (!plan) throw new Error('未找到关联的计划。');
           const brand = current.brand;
-          const knowledge = current.knowledgeItems.filter((k) => k.brandId === brand.id);
+          const knowledge = current.knowledgeEntries.filter((k) => k.brandId === brand.id);
 
           const now = new Date().toISOString();
           const runId = createId('agent-run');
@@ -767,7 +729,7 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
             status: 'waiting_for_review',
             currentStep: '生成内容草稿',
             steps,
-            usedKnowledgeItemIds: knowledge.map((k) => k.id),
+            usedKnowledgeEntryIds: knowledge.map((k) => k.id),
             usedAssetIds: [],
             outputDraftId: draft.id,
             startedAt: now,

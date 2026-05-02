@@ -13,7 +13,6 @@ import {
   type BrandSuggestInput,
   type BrandSuggestResult,
   type CreateDraftInput,
-  type CreateKnowledgeItemInput,
   type CreatePlanInput,
   type CreatePlanTaskInput,
   type UpdateDraftInput,
@@ -27,10 +26,10 @@ import {
 import {
   AgentRun,
   AppData,
-  BrandKnowledgeItem,
   BrandProfile,
   ConfigStatus,
   Draft,
+  KnowledgeEntry,
   LoginCredentials,
   Plan,
   PlanTask,
@@ -68,8 +67,8 @@ interface AppContextValue extends AppSnapshot {
     draftId: string,
     input: UpdateDraftInput,
   ) => Promise<Draft | undefined>;
-  createKnowledgeItem: (input: CreateKnowledgeItemInput) => Promise<BrandKnowledgeItem | undefined>;
-  deleteKnowledgeItem: (itemId: string) => Promise<void>;
+  deleteKnowledgeEntry: (entryId: string) => Promise<void>;
+  uploadKnowledge: (files: File[]) => Promise<{ entries: KnowledgeEntry[]; errors: any[] }>;
   startAgentRun: (taskId: string, options?: { generateImage?: boolean; imageSize?: string }) => Promise<AgentRun | undefined>;
   saveConfig: (config: SystemConfig) => Promise<SystemConfig | undefined>;
   approveDraft: (draftId: string, note?: string) => Promise<Draft | undefined>;
@@ -123,10 +122,9 @@ export function AppProvider({
 
   const refresh = useCallback(async () => {
     try {
-      const [currentUser, brand, assets, plans, planTasks, drafts, agentRuns, config, configStatus] = await Promise.all([
+      const [currentUser, brand, plans, planTasks, drafts, agentRuns, config, configStatus] = await Promise.all([
         session.getCurrentUser(),
         dataRepos.brand.getProfile(),
-        dataRepos.assets.getAssets(),
         dataRepos.plans.getPlans(),
         dataRepos.plans.getAllTasks(),
         dataRepos.drafts.getDrafts(),
@@ -134,8 +132,8 @@ export function AppProvider({
         dataRepos.config.getConfig().catch(() => null),
         fetch('/api/config/status').then(r => r.json()).then(d => (d?.llm ? d : null)).catch(() => null),
       ]);
-      const knowledgeItems = await dataRepos.knowledge.getKnowledgeItems(brand.id).catch(() => []);
-      setSnapshot({ brand, assets, knowledgeItems, plans, planTasks, drafts, agentRuns, currentUser, config: config!, configStatus });
+      const knowledgeEntries = await dataRepos.knowledge.getKnowledgeEntries(brand.id).catch(() => []);
+      setSnapshot({ brand, knowledgeEntries, plans, planTasks, drafts, agentRuns, currentUser, config: config!, configStatus });
       setError(null);
     } catch (nextError) {
       setError(getErrorMessage(nextError));
@@ -211,8 +209,12 @@ export function AppProvider({
       deleteTask: (planId, taskId) => runMutation(() => dataRepos.plans.deleteTask(planId, taskId)),
       createDraft: (input) => runMutation(() => dataRepos.drafts.createDraft(input)),
       updateDraft: (draftId, input) => runMutation(() => dataRepos.drafts.updateDraft(draftId, input)),
-      createKnowledgeItem: (input) => runMutation(() => dataRepos.knowledge.createKnowledgeItem(input)),
-      deleteKnowledgeItem: (itemId) => runMutation(() => dataRepos.knowledge.deleteKnowledgeItem(itemId)).then(() => undefined),
+      deleteKnowledgeEntry: (entryId) => runMutation(() => dataRepos.knowledge.deleteKnowledgeEntry(entryId)).then(() => undefined),
+      uploadKnowledge: async (files) => {
+        const result = await dataRepos.knowledge.uploadKnowledgeEntries(snapshot.brand.id, files);
+        await refresh();
+        return result;
+      },
       startAgentRun: (taskId, options) => runMutation(() => dataRepos.agentRuns.startAgentRun(taskId, options)),
       saveConfig: (config) => runMutation(() => dataRepos.config.saveConfig(config)),
       approveDraft: (draftId, note) => runMutation(() => dataRepos.drafts.approveDraft(draftId, note)),
