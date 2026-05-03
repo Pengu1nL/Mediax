@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Calendar, FileText, MoreHorizontal, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Modal from '../components/Modal';
@@ -6,6 +6,7 @@ import { EmptyState, InlineAlert } from '../components/PageState';
 import { useAppStore } from '../context/AppContext';
 import { Plan, PlanStatus } from '../types';
 import { formatDateRange, planStatusLabel, statusPillClass } from '../utils/presentation';
+import { getBrandProfileCompleteness } from '../utils/brandProfile';
 
 interface PlanFormState {
   title: string;
@@ -25,11 +26,20 @@ const defaultFormState: PlanFormState = {
 
 export default function Plans() {
   const navigate = useNavigate();
-  const { plans, drafts, createPlan, updatePlan, deletePlan } = useAppStore();
+  const { plans, drafts, createPlan, updatePlan, deletePlan, brand, configStatus } = useAppStore();
   const [formState, setFormState] = useState<PlanFormState>(defaultFormState);
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [notice, setNotice] = useState('');
+  const [batchMode, setBatchMode] = useState(false);
+  const [selectedPlanIds, setSelectedPlanIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!batchMode) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setBatchMode(false); setSelectedPlanIds(new Set()); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [batchMode]);
 
   const draftCounts = useMemo(
     () =>
@@ -86,6 +96,7 @@ export default function Plans() {
       status: formState.status,
       startDate: formState.startDate,
       endDate: formState.endDate,
+      brandId: brand.id,
     };
 
     const plan = editingPlanId ? await updatePlan(editingPlanId, payload) : await createPlan(payload);
@@ -107,23 +118,37 @@ export default function Plans() {
     <div className="space-y-12 pb-20">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
-          <h1 className="text-5xl font-black tracking-tighter text-ink-black">发布计划</h1>
+          <h1 className="text-5xl font-black tracking-tighter text-ink-black">
+            <button type="button" onClick={() => navigate('/brand')} className="text-signal-orange hover:underline">{brand.name}</button>
+            <span className="text-ink-black"> · 发布计划</span>
+          </h1>
           <p className="text-slate-gray mt-2 font-medium">管理和追踪您的所有内容发布时间表。</p>
         </div>
-        <button
-          type="button"
-          onClick={openCreateDialog}
-          className="bg-signal-orange text-white px-8 py-3.5 rounded-full font-bold shadow-xl hover:bg-light-orange transition-all flex items-center gap-2 active:scale-95"
-        >
-          <Plus size={20} />
-          新建计划
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => { setBatchMode(!batchMode); setSelectedPlanIds(new Set()); }}
+            className={`text-sm font-bold px-4 py-2 rounded-full transition-colors ${
+              batchMode ? 'bg-ink-black text-white' : 'text-zinc-400 hover:text-ink-black'
+            }`}
+          >
+            {batchMode ? '取消' : '批量操作'}
+          </button>
+          <button
+            type="button"
+            onClick={openCreateDialog}
+            className="bg-signal-orange text-white px-8 py-3.5 rounded-full font-bold shadow-xl hover:bg-light-orange transition-all flex items-center gap-2 active:scale-95"
+          >
+            <Plus size={20} />
+            新建计划
+          </button>
+        </div>
       </header>
 
       {plans.length === 0 ? (
         <EmptyState
-          title="还没有发布计划"
-          description="先创建一个计划，再进入计划详情编排任务和关联草稿。"
+          title={`还没有「${brand.name}」的发布计划`}
+          description={`先为「${brand.name}」创建一个计划，再进入计划详情编排任务和关联草稿。`}
           actionLabel="创建第一个计划"
           onAction={openCreateDialog}
         />
@@ -136,6 +161,39 @@ export default function Plans() {
             <PlanMetric label="关联草稿" value={linkedDrafts} />
           </section>
 
+          {batchMode ? (
+            <div className="flex items-center gap-4 p-4 bg-ink-black text-white rounded-2xl">
+              <span className="text-sm font-bold">已选 {selectedPlanIds.size} 项</span>
+              <div className="flex-1" />
+              <button
+                type="button"
+                disabled={selectedPlanIds.size === 0}
+                onClick={async () => {
+                  if (!confirm(`确定将 ${selectedPlanIds.size} 个计划标记为已完成？`)) return;
+                  for (const id of selectedPlanIds) await updatePlan(id, { status: 'completed' as PlanStatus });
+                  setSelectedPlanIds(new Set());
+                  setBatchMode(false);
+                }}
+                className="text-sm font-bold px-4 py-1.5 rounded-full bg-white text-ink-black hover:bg-zinc-200 transition-colors disabled:opacity-40"
+              >
+                批量归档
+              </button>
+              <button
+                type="button"
+                disabled={selectedPlanIds.size === 0}
+                onClick={async () => {
+                  if (!confirm(`确定删除 ${selectedPlanIds.size} 个计划？关联任务会移除，草稿保留但不再挂在计划下。`)) return;
+                  for (const id of selectedPlanIds) await deletePlan(id);
+                  setSelectedPlanIds(new Set());
+                  setBatchMode(false);
+                }}
+                className="text-sm font-bold px-4 py-1.5 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-40"
+              >
+                批量删除
+              </button>
+            </div>
+          ) : null}
+
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {plans.map((plan) => (
               <div
@@ -143,6 +201,19 @@ export default function Plans() {
                 onClick={() => navigate(`/plans/${plan.id}`)}
                 className="bento-card p-8 relative overflow-hidden group cursor-pointer hover:translate-y-[-6px] transition-all duration-300"
               >
+                {batchMode ? (
+                  <input
+                    type="checkbox"
+                    checked={selectedPlanIds.has(plan.id)}
+                    onChange={(e) => {
+                      const next = new Set(selectedPlanIds);
+                      e.target.checked ? next.add(plan.id) : next.delete(plan.id);
+                      setSelectedPlanIds(next);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute top-4 left-4 w-5 h-5 accent-signal-orange z-10"
+                  />
+                ) : null}
                 <div
                   className={`absolute top-0 right-0 w-28 h-28 rounded-bl-full -z-0 opacity-10 transition-transform group-hover:scale-110 ${
                     plan.status === 'active'
@@ -268,11 +339,46 @@ export default function Plans() {
 
       <Modal
         open={dialogOpen}
-        title={editingPlanId ? '编辑发布计划' : '创建发布计划'}
-        description="保留现有原型风格，同时把计划信息持久化到本地工作台。"
+        title={editingPlanId ? '编辑发布计划' : `为「${brand.name}」创建发布计划`}
+        description={`${brand.industry} · 品牌档案完整度 ${getBrandProfileCompleteness(brand)}%`}
         onClose={() => setDialogOpen(false)}
       >
         {notice ? <InlineAlert message={notice} onDismiss={() => setNotice('')} /> : null}
+        {!editingPlanId ? (
+          <div className="mb-6">
+            <p className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-3">快速模板</p>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: '产品发布', title: '产品发布计划', category: '产品发布', emoji: '🚀', days: 30 },
+                { label: '活动营销', title: '活动营销计划', category: '活动营销', emoji: '🎉', days: 30 },
+                { label: '日常内容', title: '日常内容日历', category: '日常运营', emoji: '📅', days: 7 },
+              ].map((tpl) => (
+                <button
+                  key={tpl.label}
+                  type="button"
+                  onClick={() => {
+                    const now = new Date();
+                    const startStr = now.toISOString().slice(0, 10);
+                    const end = new Date(now.getTime() + tpl.days * 86400000);
+                    const endStr = end.toISOString().slice(0, 10);
+                    setFormState({
+                      title: tpl.title,
+                      category: tpl.category,
+                      status: 'active',
+                      startDate: startStr,
+                      endDate: endStr,
+                    });
+                  }}
+                  className="bento-card p-4 text-center hover:border-signal-orange transition-colors group"
+                >
+                  <div className="text-2xl mb-1">{tpl.emoji}</div>
+                  <div className="text-xs font-bold text-ink-black">{tpl.label}</div>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-zinc-400 mt-3 text-center">或手动填写以下字段</p>
+          </div>
+        ) : null}
         <form className="space-y-5" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <label className="text-xs font-black uppercase tracking-widest text-ink-black">计划标题</label>
