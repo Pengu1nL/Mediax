@@ -55,7 +55,6 @@ export interface KnowledgeEntry {
 }
 
 export type PlanStatus = 'active' | 'draft' | 'completed';
-export type AutomationLevel = 'assistive' | 'agent_draft' | 'agent_publish';
 
 export interface Plan {
   id: string;
@@ -65,12 +64,6 @@ export interface Plan {
   endDate: string;
   category?: string;
   brandId?: string;
-  objective?: string;
-  audience?: string;
-  channels?: string[];
-  successMetrics?: string[];
-  automationLevel?: AutomationLevel;
-  reviewPolicy?: ReviewPolicy;
 }
 
 export type AgentTaskStatus =
@@ -111,7 +104,6 @@ export interface PlanTask {
   publishPolicy?: ReviewPolicy;
   linkedDraftIds?: string[];
   agentRunId?: string;
-  publishSchedule?: string;
 }
 
 export type DraftStatus = 'draft' | 'review' | 'ready';

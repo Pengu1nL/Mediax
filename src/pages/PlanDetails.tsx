@@ -120,7 +120,6 @@ export default function PlanDetails() {
       subtitle: task.subtitle || '',
       executionType: task.executionType,
       schedule: task.schedule,
-      publishSchedule: task.publishSchedule || '',
       status: task.status,
       brief: task.brief || '',
       channel: task.channel || '',
@@ -131,7 +130,7 @@ export default function PlanDetails() {
       const parsed = parseRecurringSchedule(task.schedule);
       setRecurringDays(parsed.days);
       setRecurringTime(parsed.time);
-      setRecurringPublishTime(task.publishSchedule || '');
+      setRecurringPublishTime('');
     } else {
       setRecurringDays([]);
       setRecurringTime('');

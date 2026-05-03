@@ -18,7 +18,6 @@ import {
   PlanStatus,
   PlanTask,
   AgentTaskStatus,
-  AutomationLevel,
   ReviewPolicy,
 } from '../../src/types';
 
@@ -339,12 +338,6 @@ ${current.trim()}${brandContext}`;
         startDate: string;
         endDate: string;
         brandId?: string;
-        objective?: string;
-        audience?: string;
-        channels?: string[];
-        successMetrics?: string[];
-        automationLevel?: AutomationLevel;
-        reviewPolicy?: ReviewPolicy;
       };
       if (!input.title || !input.status || !input.startDate || !input.endDate) {
         res.status(400).json({ error: '计划信息不完整。' });
@@ -359,12 +352,6 @@ ${current.trim()}${brandContext}`;
           startDate: input.startDate,
           endDate: input.endDate,
           brandId: input.brandId,
-          objective: input.objective,
-          audience: input.audience,
-          channels: input.channels,
-          successMetrics: input.successMetrics,
-          automationLevel: input.automationLevel,
-          reviewPolicy: input.reviewPolicy,
         };
         data.plans.unshift(plan);
         return { data, result: plan };
@@ -385,12 +372,6 @@ ${current.trim()}${brandContext}`;
         startDate: string;
         endDate: string;
         brandId?: string;
-        objective?: string;
-        audience?: string;
-        channels?: string[];
-        successMetrics?: string[];
-        automationLevel?: AutomationLevel;
-        reviewPolicy?: ReviewPolicy;
       }>;
       const plan = await updateData((data) => {
         const plan = data.plans.find((p) => p.id === planId);
@@ -460,7 +441,6 @@ ${current.trim()}${brandContext}`;
         publishPolicy?: ReviewPolicy;
         linkedDraftIds?: string[];
         agentRunId?: string;
-        publishSchedule?: string;
       };
       if (!input.title || !input.executionType || !input.schedule || !input.status) {
         res.status(400).json({ error: '任务信息不完整。' });
@@ -501,7 +481,6 @@ ${current.trim()}${brandContext}`;
           publishPolicy: input.publishPolicy,
           linkedDraftIds: input.linkedDraftIds,
           agentRunId: input.agentRunId,
-          publishSchedule: input.publishSchedule,
         };
         data.planTasks.push(task);
         return { data, result: task };
@@ -533,7 +512,6 @@ ${current.trim()}${brandContext}`;
         publishPolicy?: ReviewPolicy;
         linkedDraftIds?: string[];
         agentRunId?: string;
-        publishSchedule?: string;
       }>;
       const task = await updateData((data) => {
         const task = data.planTasks.find((t) => t.id === taskId && t.planId === planId);
@@ -1102,7 +1080,7 @@ ${current.trim()}${brandContext}`;
         const { record, taskStatus } = simulatePublish({
           draft,
           taskReviewPolicy: task?.reviewPolicy ?? task?.publishPolicy,
-          planReviewPolicy: plan?.reviewPolicy,
+          planReviewPolicy: undefined,
           brandReviewPolicy: data.brand.defaultReviewPolicy,
         });
 
@@ -1144,7 +1122,7 @@ ${current.trim()}${brandContext}`;
       const pkg = exportDraft({
         draft,
         taskReviewPolicy: task?.reviewPolicy ?? task?.publishPolicy,
-        planReviewPolicy: plan?.reviewPolicy,
+        planReviewPolicy: undefined,
         brandReviewPolicy: data.brand.defaultReviewPolicy,
       });
 

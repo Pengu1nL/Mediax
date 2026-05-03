@@ -17,7 +17,6 @@ import {
   PlanTask,
   AgentTaskStatus,
   SessionUser,
-  AutomationLevel,
   ReviewPolicy,
 } from '../types';
 
@@ -34,12 +33,6 @@ export interface CreatePlanInput {
   startDate: string;
   endDate: string;
   brandId?: string;
-  objective?: string;
-  audience?: string;
-  channels?: string[];
-  successMetrics?: string[];
-  automationLevel?: AutomationLevel;
-  reviewPolicy?: ReviewPolicy;
 }
 
 export interface UpdatePlanInput extends Partial<CreatePlanInput> {}
@@ -62,7 +55,6 @@ export interface CreatePlanTaskInput {
   publishPolicy?: ReviewPolicy;
   linkedDraftIds?: string[];
   agentRunId?: string;
-  publishSchedule?: string;
 }
 
 export interface UpdatePlanTaskInput extends Partial<CreatePlanTaskInput> {}
@@ -306,12 +298,6 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
             startDate: input.startDate,
             endDate: input.endDate,
             brandId: input.brandId,
-            objective: input.objective,
-            audience: input.audience,
-            channels: input.channels,
-            successMetrics: input.successMetrics,
-            automationLevel: input.automationLevel,
-            reviewPolicy: input.reviewPolicy,
           };
           current.plans.unshift(plan);
           return { next: current, result: plan };
@@ -384,7 +370,6 @@ export function createLocalStorageRepositories(storage: StorageLike): AppReposit
             publishPolicy: input.publishPolicy,
             linkedDraftIds: input.linkedDraftIds,
             agentRunId: input.agentRunId,
-            publishSchedule: input.publishSchedule,
           };
 
           current.planTasks.push(task);
