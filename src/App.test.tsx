@@ -52,7 +52,7 @@ describe('App routing', () => {
     await user.type(screen.getByLabelText('密码'), 'mediax2026');
     await user.click(screen.getByRole('button', { name: '登录并继续' }));
 
-    expect(await screen.findByRole('heading', { name: '发布计划' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Mediax · 发布计划' })).toBeInTheDocument();
   });
 
   it('redirects authenticated users to onboarding until brand setup is complete', async () => {
@@ -157,7 +157,7 @@ describe('App routing', () => {
     await user.click(screen.getByRole('button', { name: '登录并继续' }));
 
     expect(await screen.findByRole('heading', { name: '行业新闻' })).toBeInTheDocument();
-    expect(screen.getByText('媒体与出版')).toBeInTheDocument();
+    expect(screen.getByText('传媒')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '内容生产热力' })).not.toBeInTheDocument();
   });
 
@@ -174,7 +174,7 @@ describe('App routing', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('主视觉海报发布 - 微信公众号')).toBeInTheDocument();
+    expect(await screen.findByText('产品功能介绍文章 - 微信公众号')).toBeInTheDocument();
 
     // 打开第一个任务的三点菜单
     await user.click(screen.getAllByRole('button', { name: '任务操作' })[0]);
@@ -183,7 +183,7 @@ describe('App routing', () => {
     await user.click(deleteButtons[0]);
 
     expect(confirm).toHaveBeenCalledWith('删除任务后，关联草稿会保留但不再挂在任务下。确认继续吗？');
-    expect(screen.getByText('主视觉海报发布 - 微信公众号')).toBeInTheDocument();
+    expect(screen.getByText('产品功能介绍文章 - 微信公众号')).toBeInTheDocument();
   });
 
   it('shows the knowledge base page', async () => {
@@ -212,14 +212,14 @@ describe('App routing', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('主视觉海报发布 - 微信公众号')).toBeInTheDocument();
+    expect(await screen.findByText('产品功能介绍文章 - 微信公众号')).toBeInTheDocument();
 
     // Open task detail by clicking task title
-    await user.click(screen.getByText('主视觉海报发布 - 微信公众号'));
+    await user.click(screen.getByText('产品功能介绍文章 - 微信公众号'));
 
     // Assert the TaskDetails page shows agent-ready fields
     expect(await screen.findByRole('heading', { name: '任务 Brief' })).toBeInTheDocument();
-    expect(screen.getByText('发布秋季招生主视觉海报，突出融合教育理念和临港校区环境，配合招生简章下载入口。')).toBeInTheDocument();
+    expect(screen.getByText('撰写一篇关于 Mediax 最新 Agent 功能的介绍文章，突出自动化内容生成和批量发布两大亮点，引导用户试用。')).toBeInTheDocument();
     expect(screen.getByText('微信公众号')).toBeInTheDocument();
     expect(screen.getByText('图文')).toBeInTheDocument();
     expect(screen.getByText('必须人工审核')).toBeInTheDocument();

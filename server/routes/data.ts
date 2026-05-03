@@ -318,6 +318,49 @@ ${current.trim()}${brandContext}`;
     }
   });
 
+  // ---- Task Brief AI ----
+
+  router.post('/tasks/suggest-brief', async (req: Request, res: Response) => {
+    try {
+      const { title, channel, contentType, brief } = req.body as {
+        title: string;
+        channel?: string;
+        contentType?: string;
+        brief?: string;
+      };
+      if (!title) {
+        res.status(400).json({ error: '缺少任务标题。' });
+        return;
+      }
+
+      const data = await loadData();
+      const llm = getLlmProvider(data.config?.llm);
+      if (!llm) {
+        res.status(400).json({ error: '请先在设置中配置 AI 接口。' });
+        return;
+      }
+
+      const systemPrompt = '你是一位资深内容运营专家，擅长为自媒体内容任务撰写高质量 Brief。\n\n请根据任务信息优化 Brief，要求：\n1. 100-200 字\n2. 包含目标受众、核心信息点、内容风格建议\n3. 语言简洁有力\n4. 直接输出优化后的 Brief 文本，不要加任何前缀或说明';
+
+      const parts = [`任务标题：${title}`];
+      if (channel) parts.push(`发布渠道：${channel}`);
+      if (contentType) parts.push(`内容类型：${contentType}`);
+      if (brief) parts.push(`当前草稿：${brief}`);
+      parts.push('请输出优化后的完整 Brief：');
+
+      const output = await llm.generate({
+        systemPrompt,
+        userPrompt: parts.join('\n'),
+        maxTokens: 400,
+        temperature: 0.7,
+      });
+
+      res.json({ brief: output.trim() });
+    } catch {
+      res.status(500).json({ error: '生成 Brief 建议失败。' });
+    }
+  });
+
   // ---- Plans ----
 
   router.get('/plans', async (_req: Request, res: Response) => {
