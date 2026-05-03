@@ -2,17 +2,19 @@ import React, { useMemo, useState } from 'react';
 import {
   Calendar,
   FileText,
+  Loader2,
   MoreHorizontal,
   PlayCircle,
   Plus,
   Repeat,
+  Sparkles,
   Users,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Modal from '../components/Modal';
 import { EmptyState, InlineAlert, NotFoundState } from '../components/PageState';
 import { useAppStore } from '../context/AppContext';
-import { AgentTaskStatus, ExecutionType, PlanTask, ReviewPolicy } from '../types';
+import { ExecutionType, PlanTask, ReviewPolicy } from '../types';
 import {
   executionTypeLabel,
   formatDateRange,
@@ -26,12 +28,12 @@ interface TaskFormState {
   subtitle: string;
   executionType: ExecutionType;
   schedule: string;
-  publishSchedule: string;
-  status: AgentTaskStatus;
   brief: string;
   channel: string;
   contentType: string;
   reviewPolicy: ReviewPolicy;
+  requirements: string;
+  researchInstructions: string;
 }
 
 const defaultTaskForm: TaskFormState = {
@@ -39,27 +41,29 @@ const defaultTaskForm: TaskFormState = {
   subtitle: '',
   executionType: 'single',
   schedule: '',
-  publishSchedule: '',
-  status: 'draft',
   brief: '',
   channel: '',
   contentType: '',
   reviewPolicy: 'manual_required',
+  requirements: '',
+  researchInstructions: '',
 };
 
 export default function PlanDetails() {
   const navigate = useNavigate();
   const { planId } = useParams();
-  const { plans, planTasks, drafts, createDraft, createTask, updateTask, deleteTask } = useAppStore();
+  const { plans, planTasks, drafts, createDraft, createTask, updateTask, deleteTask, brand, configStatus } = useAppStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [formState, setFormState] = useState<TaskFormState>(defaultTaskForm);
   const [notice, setNotice] = useState('');
+  const [briefAiLoading, setBriefAiLoading] = useState(false);
+  const [customChannel, setCustomChannel] = useState('');
+  const [customContentType, setCustomContentType] = useState('');
 
   // 循环执行调度
   const [recurringDays, setRecurringDays] = useState<number[]>([]);
   const [recurringTime, setRecurringTime] = useState('');
-  const [recurringPublishTime, setRecurringPublishTime] = useState('');
 
   const WEEKDAY_LABELS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
@@ -87,6 +91,24 @@ export default function PlanDetails() {
     setRecurringDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
   }
 
+  const handleBriefAiOptimize = async () => {
+    const title = formState.title.trim() || '未命名任务';
+    const brief = formState.brief.trim();
+    setBriefAiLoading(true);
+    try {
+      const token = localStorage.getItem('mediax.auth-token.v1');
+      const res = await fetch('/api/tasks/suggest-brief', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ title, channel: formState.channel, contentType: formState.contentType, brief }),
+      });
+      if (!res.ok) throw new Error('请求失败');
+      const data = await res.json();
+      setFormState(prev => ({ ...prev, brief: data.brief }));
+    } catch { /* silent */ }
+    finally { setBriefAiLoading(false); }
+  };
+
   const plan = plans.find((item) => item.id === planId);
   const tasks = useMemo(() => planTasks.filter((task) => task.planId === planId), [planId, planTasks]);
   const linkedDrafts = useMemo(() => drafts.filter((draft) => draft.planId === planId), [drafts, planId]);
@@ -105,10 +127,11 @@ export default function PlanDetails() {
   const openCreateDialog = () => {
     setNotice('');
     setEditingTaskId(null);
-    setFormState(defaultTaskForm);
+    setFormState({ ...defaultTaskForm, reviewPolicy: brand?.defaultReviewPolicy || 'manual_required' });
     setRecurringDays([]);
     setRecurringTime('');
-    setRecurringPublishTime('');
+    setCustomChannel('');
+    setCustomContentType('');
     setDialogOpen(true);
   };
 
@@ -120,21 +143,34 @@ export default function PlanDetails() {
       subtitle: task.subtitle || '',
       executionType: task.executionType,
       schedule: task.schedule,
-      status: task.status,
       brief: task.brief || '',
       channel: task.channel || '',
       contentType: task.contentType || '',
-      reviewPolicy: task.reviewPolicy || 'manual_required',
+      reviewPolicy: task.reviewPolicy || brand?.defaultReviewPolicy || 'manual_required',
+      requirements: task.requirements?.join(', ') || '',
+      researchInstructions: task.researchInstructions || '',
     });
+    const PRESET_CHANNELS = ['微信公众号', '小红书', '抖音', '视频号', '官方博客'];
+    if (task.channel && !PRESET_CHANNELS.includes(task.channel)) {
+      setCustomChannel(task.channel);
+      setFormState(prev => ({ ...prev, channel: '__custom__' }));
+    } else {
+      setCustomChannel('');
+    }
+    const PRESET_CONTENT_TYPES = ['图文', '短视频', '直播', '长文章', '海报'];
+    if (task.contentType && !PRESET_CONTENT_TYPES.includes(task.contentType)) {
+      setCustomContentType(task.contentType);
+      setFormState(prev => ({ ...prev, contentType: '__custom__' }));
+    } else {
+      setCustomContentType('');
+    }
     if (task.executionType === 'recurring') {
       const parsed = parseRecurringSchedule(task.schedule);
       setRecurringDays(parsed.days);
       setRecurringTime(parsed.time);
-      setRecurringPublishTime('');
     } else {
       setRecurringDays([]);
       setRecurringTime('');
-      setRecurringPublishTime('');
     }
     setDialogOpen(true);
   };
@@ -151,11 +187,15 @@ export default function PlanDetails() {
       setNotice('任务 brief 不能为空。');
       return;
     }
-    if (!formState.channel.trim()) {
+
+    const effectiveChannel = formState.channel === '__custom__' ? customChannel : formState.channel;
+    const effectiveContentType = formState.contentType === '__custom__' ? customContentType : formState.contentType;
+
+    if (!effectiveChannel.trim()) {
       setNotice('任务渠道不能为空。');
       return;
     }
-    if (!formState.contentType.trim()) {
+    if (!effectiveContentType.trim()) {
       setNotice('任务内容类型不能为空。');
       return;
     }
@@ -171,17 +211,24 @@ export default function PlanDetails() {
       return;
     }
 
+    const existingStatus = editingTaskId
+      ? tasks.find(t => t.id === editingTaskId)?.status || 'draft'
+      : 'draft';
+
     const payload = {
       title: formState.title.trim(),
       subtitle: formState.subtitle.trim() || undefined,
       executionType: formState.executionType,
       schedule,
-      publishSchedule: isSingle ? undefined : (recurringPublishTime || undefined),
-      status: formState.status,
+      status: existingStatus,
       brief: formState.brief.trim(),
-      channel: formState.channel.trim(),
-      contentType: formState.contentType.trim(),
+      channel: effectiveChannel.trim(),
+      contentType: effectiveContentType.trim(),
       reviewPolicy: formState.reviewPolicy,
+      requirements: formState.requirements
+        ? formState.requirements.split(',').map(s => s.trim()).filter(Boolean)
+        : undefined,
+      researchInstructions: formState.researchInstructions || undefined,
     };
 
     const task = editingTaskId
@@ -241,6 +288,26 @@ export default function PlanDetails() {
       });
       navigate(`/drafts/${draft.id}`);
     }
+  };
+
+  const handleCopyTask = (task: PlanTask) => {
+    openCreateDialog();
+    setTimeout(() => {
+      setFormState({
+        title: task.title + ' (副本)',
+        subtitle: task.subtitle || '',
+        executionType: task.executionType,
+        schedule: '',
+        brief: task.brief || '',
+        channel: task.channel || '',
+        contentType: task.contentType || '',
+        reviewPolicy: task.reviewPolicy || brand?.defaultReviewPolicy || 'manual_required',
+        requirements: task.requirements?.join(', ') || '',
+        researchInstructions: task.researchInstructions || '',
+      });
+      setRecurringDays([]);
+      setRecurringTime('');
+    }, 50);
   };
 
   const handleDeleteTask = async (task: PlanTask) => {
@@ -327,6 +394,7 @@ export default function PlanDetails() {
                     onEdit={() => openEditDialog(task)}
                     onDelete={() => handleDeleteTask(task)}
                     onOpenDraft={() => handleDraftAction(task)}
+                    onCopy={() => handleCopyTask(task)}
                   />
                 ))}
               </tbody>
@@ -358,16 +426,69 @@ export default function PlanDetails() {
 
           {/* 任务 Brief */}
           <div className="space-y-2">
-            <label htmlFor="task-brief" className="text-xs font-black uppercase tracking-widest text-ink-black">
-              任务 Brief <span className="text-signal-orange">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label htmlFor="task-brief" className="text-xs font-black uppercase tracking-widest text-zinc-400">
+                任务 Brief *
+              </label>
+              <button
+                type="button"
+                onClick={handleBriefAiOptimize}
+                disabled={briefAiLoading || !configStatus?.llm?.configured}
+                className="flex items-center gap-1 text-xs font-bold text-signal-orange hover:text-orange-600 transition-colors disabled:opacity-40"
+              >
+                {briefAiLoading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                AI 优化
+              </button>
+            </div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-bold uppercase text-zinc-400">模板：</span>
+              {[
+                { label: '产品发布', text: '发布{产品名}，突出核心功能与差异化价值，目标受众为{受众}，语言简洁有吸引力。' },
+                { label: '活动营销', text: '推广{活动名}，传达活动亮点和参与方式，目标受众为{受众}，营造紧迫感。' },
+                { label: '品牌宣传', text: '强化品牌{核心定位}认知，通过{内容角度}建立专业形象，面向{受众}。' },
+              ].map((tpl) => (
+                <button
+                  key={tpl.label}
+                  type="button"
+                  onClick={() => setFormState(prev => ({ ...prev, brief: tpl.text }))}
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-500 hover:bg-signal-orange/10 hover:text-signal-orange transition-colors"
+                >
+                  {tpl.label}
+                </button>
+              ))}
+            </div>
             <textarea
               id="task-brief"
               value={formState.brief}
               onChange={(event) => setFormState((current) => ({ ...current, brief: event.target.value }))}
               className="w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-5 py-4 font-bold resize-none"
-              rows={3}
+              rows={5}
               placeholder="描述任务目标、受众和核心信息点，Agent 将以此为依据执行内容生成。"
+            />
+            {formState.brief.length > 0 ? (
+              <p className="text-xs font-medium mt-1">
+                <span className="text-zinc-400">{formState.brief.length} 字</span>
+                <span className="mx-2 text-zinc-200">·</span>
+                {formState.brief.length < 30 ? (
+                  <span className="text-amber-600">Brief 过短，建议补充目标受众和核心信息点</span>
+                ) : formState.brief.length <= 80 ? (
+                  <span className="text-blue-600">Brief 基本完整，可继续完善</span>
+                ) : (
+                  <span className="text-green-600">内容充足 ✓</span>
+                )}
+              </p>
+            ) : null}
+          </div>
+
+          {/* 执行要求 */}
+          <div>
+            <label className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-2 block">执行要求</label>
+            <input
+              type="text"
+              value={formState.requirements}
+              onChange={(e) => setFormState(prev => ({ ...prev, requirements: e.target.value }))}
+              className="w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-5 py-4 font-bold"
+              placeholder="逗号分隔，每项为一个要求"
             />
           </div>
 
@@ -389,7 +510,13 @@ export default function PlanDetails() {
                 <option value="抖音">抖音</option>
                 <option value="视频号">视频号</option>
                 <option value="官方博客">官方博客</option>
+                <option value="__custom__">其他（自定义）</option>
               </select>
+              {formState.channel === '__custom__' ? (
+                <input type="text" value={customChannel} onChange={e => setCustomChannel(e.target.value)}
+                  placeholder="请输入发布渠道" autoFocus
+                  className="w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-5 py-4 font-bold mt-2" />
+              ) : null}
             </div>
             <div className="space-y-2">
               <label htmlFor="task-content-type" className="text-xs font-black uppercase tracking-widest text-ink-black">
@@ -407,7 +534,13 @@ export default function PlanDetails() {
                 <option value="直播">直播</option>
                 <option value="长文章">长文章</option>
                 <option value="海报">海报</option>
+                <option value="__custom__">其他（自定义）</option>
               </select>
+              {formState.contentType === '__custom__' ? (
+                <input type="text" value={customContentType} onChange={e => setCustomContentType(e.target.value)}
+                  placeholder="请输入内容类型" autoFocus
+                  className="w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-5 py-4 font-bold mt-2" />
+              ) : null}
             </div>
           </div>
 
@@ -448,6 +581,27 @@ export default function PlanDetails() {
                     <span className="w-8 h-8 rounded-full bg-zinc-200 text-ink-black flex items-center justify-center text-xs font-black">2</span>
                     <span className="text-sm font-black uppercase tracking-widest text-ink-black">执行周期</span>
                   </div>
+                  <div className="flex gap-1 mb-2 ml-11">
+                    {[
+                      { label: '工作日', days: [0,1,2,3,4] },
+                      { label: '每天', days: [0,1,2,3,4,5,6] },
+                      { label: '周末', days: [5,6] },
+                    ].map((preset) => {
+                      const matching = preset.days.length === recurringDays.length && preset.days.every(d => recurringDays.includes(d));
+                      return (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => setRecurringDays(preset.days)}
+                          className={`text-[10px] font-bold px-2 py-1 rounded-full transition-colors ${
+                            matching ? 'bg-signal-orange text-white' : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                   <div className="flex flex-wrap gap-2 ml-11">
                     {WEEKDAY_LABELS.map((label, idx) => (
                       <button
@@ -466,29 +620,16 @@ export default function PlanDetails() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pl-11">
+                <div className="pl-11">
                   <div className="flex items-center gap-3">
                     <span className="w-8 h-8 rounded-full bg-zinc-200 text-ink-black flex items-center justify-center text-xs font-black">3</span>
                     <div className="flex-1 space-y-1">
-                      <label htmlFor="recurring-time" className="text-xs font-black uppercase tracking-widest text-zinc-400">执行时间</label>
+                      <label htmlFor="recurring-time" className="text-xs font-black uppercase tracking-widest text-zinc-400">发布时间</label>
                       <input
                         id="recurring-time"
                         type="time"
                         value={recurringTime}
                         onChange={(event) => setRecurringTime(event.target.value)}
-                        className="w-full rounded-2xl border border-zinc-200 bg-white px-5 py-3 font-bold text-sm"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-full bg-zinc-200 text-ink-black flex items-center justify-center text-xs font-black">4</span>
-                    <div className="flex-1 space-y-1">
-                      <label htmlFor="task-publish-schedule" className="text-xs font-black uppercase tracking-widest text-zinc-400">计划发布时间</label>
-                      <input
-                        id="task-publish-schedule"
-                        type="time"
-                        value={recurringPublishTime}
-                        onChange={(event) => setRecurringPublishTime(event.target.value)}
                         className="w-full rounded-2xl border border-zinc-200 bg-white px-5 py-3 font-bold text-sm"
                       />
                     </div>
@@ -513,24 +654,16 @@ export default function PlanDetails() {
 
           {/* 状态 + 审核策略 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-2">
-              <label htmlFor="task-status" className="text-xs font-black uppercase tracking-widest text-ink-black">状态</label>
-              <select
-                id="task-status"
-                value={formState.status}
-                onChange={(event) =>
-                  setFormState((current) => ({ ...current, status: event.target.value as AgentTaskStatus }))
-                }
-                className="w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-5 py-4 font-bold"
-              >
-                <option value="draft">草稿</option>
-                <option value="queued">排队中</option>
-                <option value="ready_for_review">待审核</option>
-                <option value="approved">已批准</option>
-                <option value="published">已发布</option>
-                <option value="cancelled">已取消</option>
-              </select>
-            </div>
+            {editingTaskId ? (
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-zinc-400">状态</label>
+                <div className="w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-5 py-4 font-bold text-sm flex items-center">
+                  <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black border ${statusPillClass(tasks.find(t => t.id === editingTaskId)?.status || 'draft')}`}>
+                    {taskStatusLabel(tasks.find(t => t.id === editingTaskId)?.status || 'draft')}
+                  </span>
+                </div>
+              </div>
+            ) : null}
             <div className="space-y-2">
               <label htmlFor="task-review-policy" className="text-xs font-black uppercase tracking-widest text-ink-black">审核策略</label>
               <select
@@ -546,6 +679,18 @@ export default function PlanDetails() {
                 <option value="auto_publish">自动发布</option>
               </select>
             </div>
+          </div>
+
+          {/* 调研参考 */}
+          <div>
+            <label className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-2 block">调研参考</label>
+            <textarea
+              value={formState.researchInstructions}
+              onChange={(e) => setFormState(prev => ({ ...prev, researchInstructions: e.target.value }))}
+              className="w-full rounded-2xl border border-zinc-100 bg-zinc-50 px-5 py-4 font-bold resize-none"
+              rows={2}
+              placeholder="Agent 执行前会参考此信息辅助内容生成"
+            />
           </div>
 
           <div className="pt-4 flex justify-end gap-4">
@@ -582,6 +727,7 @@ function TaskRow({
   onEdit,
   onDelete,
   onOpenDraft,
+  onCopy,
 }: {
   key?: React.Key;
   task: PlanTask;
@@ -589,6 +735,7 @@ function TaskRow({
   onEdit: () => void;
   onDelete: () => void;
   onOpenDraft: () => void;
+  onCopy: () => void;
 }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -647,6 +794,13 @@ function TaskRow({
                 className="w-full text-left px-5 py-2.5 text-sm font-bold text-ink-black hover:bg-zinc-50 transition-colors"
               >
                 编辑
+              </button>
+              <button
+                type="button"
+                onMouseDown={() => { onCopy(); setMenuOpen(false); }}
+                className="w-full text-left px-5 py-2.5 text-sm font-bold hover:bg-zinc-50 transition-colors"
+              >
+                复制
               </button>
               <button
                 type="button"
